@@ -5,7 +5,6 @@ from auth import (
     restore_session,
     login_email,
     signup_email,
-    reset_password,
     logout
 )
 
@@ -273,6 +272,10 @@ if user:
         key="logout_btn"
     ):
 
+        # Clear user from session state first
+        if "user" in st.session_state:
+            del st.session_state["user"]
+        
         logout()
 
         st.rerun()
@@ -435,8 +438,8 @@ with login_tab:
 
             if result["success"]:
 
-
-                st.session_state.user = result["user"]
+                # Fix: Use dictionary syntax for session state
+                st.session_state["user"] = result["user"]
 
                 st.success(
                     "Login successful 🚀"
@@ -444,60 +447,6 @@ with login_tab:
 
                 st.rerun()
 
-
-
-            else:
-
-
-                st.error(
-                    result["error"]
-                )
-
-
-
-    st.divider()
-
-
-
-    st.subheader(
-        "Forgot Password"
-    )
-
-
-
-    reset_email_input = st.text_input(
-
-        "Email",
-
-        key="reset_email"
-
-    )
-
-
-
-    if st.button(
-        "Send Reset Email",
-        key="reset_submit"
-    ):
-
-
-        if not reset_email_input:
-            st.error("Please enter your email address.")
-        else:
-            result = reset_password(
-
-                reset_email_input
-
-            )
-
-
-
-            if result["success"]:
-
-
-                st.success(
-                    "Password reset email sent. Please check your inbox and spam folder."
-                )
 
 
             else:
@@ -640,15 +589,10 @@ with signup_tab:
 
             if result["success"]:
                 
-                # Check if confirmation is required
-                if result.get("requires_confirmation", False):
-                    st.success(
-                        result.get("message", "Account created! Please check your email to verify your account.")
-                    )
-                else:
-                    st.success(
-                        "Account created successfully! You can now login."
-                    )
+                # Simplified success message
+                st.success(
+                    "Account created successfully! You can now login."
+                )
 
 
             else:
