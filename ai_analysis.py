@@ -583,6 +583,24 @@ career benefit
         except Exception as e:
 
 
+            error_msg = str(e)
+            
+            # Check for quota exceeded error
+            if "429" in error_msg or "quota" in error_msg or "RESOURCE_EXHAUSTED" in error_msg or "exceeded your current quota" in error_msg:
+                
+                logger.warning(
+                    f"⚠️ API QUOTA EXCEEDED: {error_msg}"
+                )
+                
+                # Return a user-friendly quota error
+                return {
+                    "error": "AI analysis quota exceeded. Please try again later.",
+                    "quota_error": True,
+                    "retry_after": 86400,  # 24 hours in seconds
+                    "message": "You've reached the daily limit for AI analysis. Please wait 24 hours or upgrade your plan."
+                }
+
+
             logger.warning(
 
                 f"AI attempt {attempt+1}/{MAX_RETRIES}: {e}"
@@ -607,7 +625,7 @@ career benefit
 
         "error":
 
-        "AI analysis failed",
+        "AI analysis failed. Please try again later.",
 
 
         "company_name":
@@ -678,7 +696,7 @@ career benefit
 
         "mentor_summary":
 
-        "Please retry analysis."
+        "Analysis service temporarily unavailable. Please try again later."
 
     }
 
