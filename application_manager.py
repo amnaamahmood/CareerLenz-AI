@@ -146,6 +146,22 @@ def get_user_email():
     return None
 
 
+def get_user_name():
+
+    user = st.session_state.get(
+        "user"
+    )
+
+    if user:
+
+        return user.user_metadata.get(
+            "full_name",
+            "Career User"
+        )
+
+    return "Career User"
+
+
 
 
 
@@ -187,6 +203,11 @@ def trigger_n8n(
         return False
 
 
+    # Get user details
+    user_id = get_user_id()
+    user_email = get_user_email()
+    user_name = get_user_name()
+
     event_payload = {
 
         "application": APP_NAME,
@@ -199,15 +220,19 @@ def trigger_n8n(
             timezone.utc
         ).isoformat(),
 
-        "user_id": get_user_id(),
+        "user_id": user_id,
 
-        "user_email": st.session_state.user.email,
+        "user_email": user_email,
+
+        "user_name": user_name,
 
         "data": payload or {}
 
     }
 
 
+    # Log what we're sending for debugging
+    logger.info(f"Sending to n8n: event={event_name}, user_email={user_email}")
 
 
     for attempt in range(
@@ -256,7 +281,7 @@ def trigger_n8n(
             logger.warning(
 
                 f"n8n failed attempt {attempt}: "
-                f"{response.status_code}"
+                f"{response.status_code} - {response.text}"
 
             )
 
@@ -339,6 +364,11 @@ def add_application(
         )
 
 
+    # Get user email
+    user_email = get_user_email()
+    
+    if not user_email:
+        logger.warning("No user email found in session state!")
 
 
     company = validate_text(
@@ -365,7 +395,7 @@ def add_application(
 
         "user_id": user_id,
 
-        "user_email": st.session_state.user.email,
+        "user_email": user_email,
 
         "company": company,
 
@@ -421,30 +451,41 @@ def add_application(
             )
 
 
+        # Build the data payload for n8n
+        n8n_payload = {
 
+            "application_id": application_id,
+
+            "company": company,
+
+            "role": role,
+
+            "job_description": job_description,
+
+            "user_id": user_id,
+
+            "user_email": user_email,  # Explicitly include email
+
+            "match_score": match_score,
+
+            "status": "Applied",
+
+            "created_at": datetime.now(
+                timezone.utc
+            ).isoformat()
+
+        }
+
+
+        # Log what we're sending
+        logger.info(f"Sending application data to n8n: {n8n_payload}")
 
 
         trigger_n8n(
 
             "application_saved",
 
-            {
-
-                "application_id": application_id,
-
-                "company": company,
-
-                "role": role,
-
-                "job_description": job_description,
-
-                "user_id": user_id,
-
-                "user_email": st.session_state.user.email,
-
-                "match_score": match_score
-
-            }
+            n8n_payload
 
         )
 
@@ -709,18 +750,13 @@ def update_application_status(
 
             {
 
+                "application_id": application_id,
 
-                "application_id":
-
-                application_id,
-
-
-                "status":
-
-                status,
+                "status": status,
                 
-                "user_email":  # Include user_email in status update too
-                get_user_email()
+                "user_id": user_id,
+
+                "user_email": get_user_email()
 
             }
 
@@ -829,18 +865,13 @@ def update_interview_date(
 
             {
 
+                "application_id": application_id,
 
-                "application_id":
-
-                application_id,
-
-
-                "interview_date":
-
-                interview_date,
+                "interview_date": interview_date,
                 
-                "user_email":  # Include user_email in interview update too
-                get_user_email()
+                "user_id": user_id,
+
+                "user_email": get_user_email()
 
             }
 
@@ -934,13 +965,11 @@ def delete_application(
 
             {
 
-
-                "application_id":
-
-                application_id,
+                "application_id": application_id,
                 
-                "user_email":  # Include user_email in delete too
-                get_user_email()
+                "user_id": user_id,
+
+                "user_email": get_user_email()
 
             }
 
