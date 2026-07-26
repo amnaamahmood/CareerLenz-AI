@@ -8,6 +8,7 @@ import requests
 
 from dotenv import load_dotenv
 from google import genai
+from groq import Groq
 
 
 # =====================================================
@@ -18,6 +19,7 @@ load_dotenv()
 
 
 GEMINI_API_KEY = os.getenv("GEMINI_API_KEY")
+GROQ_API_KEY = os.getenv("GROQ_API_KEY")
 
 N8N_WEBHOOK_URL = os.getenv("N8N_WEBHOOK_URL")
 
@@ -52,6 +54,17 @@ if not GEMINI_API_KEY:
 client = genai.Client(
     api_key=GEMINI_API_KEY
 )
+
+# Groq client
+groq_client = None
+
+if GROQ_API_KEY:
+    groq_client = Groq(
+        api_key=GROQ_API_KEY
+    )
+    logger.info("✅ Groq client initialized")
+else:
+    logger.warning("⚠️ Groq API key not found. Groq fallback disabled.")
 
 
 
@@ -302,6 +315,40 @@ def trigger_n8n(
         return False
 
 
+
+
+
+
+
+
+# =====================================================
+# GROQ FALLBACK
+# =====================================================
+
+
+def analyze_with_groq(prompt):
+
+    if not groq_client:
+        raise Exception(
+            "Groq API key missing"
+        )
+
+    response = groq_client.chat.completions.create(
+
+        model="llama-3.3-70b-versatile",
+
+        messages=[
+            {
+                "role": "user",
+                "content": prompt
+            }
+        ],
+
+        temperature=0.2
+
+    )
+
+    return response.choices[0].message.content
 
 
 
@@ -586,19 +633,85 @@ career benefit
             error_msg = str(e)
             
             # Check for quota exceeded error
-            if "429" in error_msg or "quota" in error_msg or "RESOURCE_EXHAUSTED" in error_msg or "exceeded your current quota" in error_msg:
-                
+            if (
+                "429" in error_msg
+                or "quota" in error_msg
+                or "RESOURCE_EXHAUSTED" in error_msg
+                or "exceeded your current quota" in error_msg
+            ):
+
                 logger.warning(
-                    f"⚠️ API QUOTA EXCEEDED: {error_msg}"
+                    f"⚠️ Gemini quota reached. Switching to Groq..."
                 )
-                
-                # Return a user-friendly quota error
-                return {
-                    "error": "AI analysis quota exceeded. Please try again later.",
-                    "quota_error": True,
-                    "retry_after": 86400,  # 24 hours in seconds
-                    "message": "You've reached the daily limit for AI analysis. Please wait 24 hours or upgrade your plan."
-                }
+
+                try:
+
+                    groq_response = analyze_with_groq(
+                        prompt
+                    )
+
+                    analysis = parse_json_response(
+                        groq_response
+                    )
+
+                    if analysis:
+
+                        logger.info(
+                            "✅ Groq fallback successful"
+                        )
+
+                        if not analysis.get(
+                            "company_name"
+                        ):
+
+                            analysis["company_name"] = company
+
+                        trigger_n8n(
+
+                            "resume_analysis_completed",
+
+                            {
+
+                                "company":
+                                analysis.get(
+                                    "company_name"
+                                ),
+
+                                "job_title":
+                                analysis.get(
+                                    "job_title"
+                                ),
+
+                                "match_score":
+                                analysis.get(
+                                    "match_score",
+                                    0
+                                )
+
+                            }
+
+                        )
+
+                        return analysis
+
+                except Exception as groq_error:
+
+                    logger.error(
+                        f"❌ Groq fallback failed: {groq_error}"
+                    )
+
+                    return {
+
+                        "error":
+                        "AI service temporarily unavailable. Please try again later.",
+
+                        "quota_error":
+                        True,
+
+                        "message":
+                        "Both AI models reached their limits. Please try again later."
+
+                    }
 
 
             logger.warning(
