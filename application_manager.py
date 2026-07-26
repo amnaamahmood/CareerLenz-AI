@@ -112,52 +112,85 @@ logger = logging.getLogger(
 
 
 # =====================================================
-# CURRENT USER
+# CURRENT USER - IMPROVED
 # =====================================================
 
 
 def get_user_id():
 
+    # First try stored user_id
+    user_id = st.session_state.get(
+        "user_id"
+    )
 
+    if user_id:
+        return user_id
+
+    # Fallback to user object
     user = st.session_state.get(
         "user"
     )
 
-
     if user:
-
-        return user.id
-
-
+        # Try to get id from user object
+        user_id = getattr(user, 'id', None)
+        if user_id:
+            # Cache it for future use
+            st.session_state["user_id"] = user_id
+            return user_id
 
     return None
 
 
 def get_user_email():
 
+    # First try stored user_email
+    user_email = st.session_state.get(
+        "user_email"
+    )
+
+    if user_email:
+        return user_email
+
+    # Fallback to user object
     user = st.session_state.get(
         "user"
     )
 
     if user:
-
-        return user.email
+        # Try to get email from user object
+        user_email = getattr(user, 'email', None)
+        if user_email:
+            # Cache it for future use
+            st.session_state["user_email"] = user_email
+            return user_email
 
     return None
 
 
 def get_user_name():
 
+    # First try stored user_name
+    user_name = st.session_state.get(
+        "user_name"
+    )
+
+    if user_name:
+        return user_name
+
+    # Fallback to user object
     user = st.session_state.get(
         "user"
     )
 
     if user:
-
-        return user.user_metadata.get(
-            "full_name",
-            "Career User"
-        )
+        # Try to get name from user metadata
+        user_metadata = getattr(user, 'user_metadata', {})
+        user_name = user_metadata.get('full_name', 'Career User')
+        if user_name:
+            # Cache it for future use
+            st.session_state["user_name"] = user_name
+            return user_name
 
     return "Career User"
 
@@ -413,6 +446,65 @@ def check_duplicate_application(company, role, user_id):
         )
 
         return None
+
+
+
+
+
+# =====================================================
+# FIX OLD RECORDS
+# =====================================================
+
+
+def fix_null_user_ids():
+    """
+    Update old application records that have null user_id
+    to use the current user's ID.
+    """
+    user_id = get_user_id()
+    
+    if not user_id:
+        return {"success": False, "message": "No user logged in"}
+    
+    try:
+        # Find all applications with null user_id
+        response = (
+            supabase
+            .table("applications")
+            .select("*")
+            .is_("user_id", "null")
+            .execute()
+        )
+        
+        if not response.data:
+            return {"success": True, "message": "No old records found", "fixed": 0}
+        
+        count = len(response.data)
+        
+        # Update them with the current user_id
+        for app in response.data:
+            (
+                supabase
+                .table("applications")
+                .update({
+                    "user_id": user_id, 
+                    "user_email": get_user_email()
+                })
+                .eq("id", app["id"])
+                .execute()
+            )
+        
+        logger.info(f"✅ Fixed {count} old records with null user_id")
+        
+        return {
+            "success": True,
+            "message": f"Fixed {count} old records",
+            "fixed": count
+        }
+        
+    except Exception as e:
+        logger.error(f"❌ Failed to fix null user_ids: {e}")
+        return {"success": False, "message": str(e)}
 
 
 
