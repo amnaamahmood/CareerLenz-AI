@@ -669,12 +669,21 @@ def run_analysis():
 
 
     if result.get("error"):
-
-
-        st.error(
-            result["error"]
-        )
-
+        
+        # Check if it's a quota error
+        if result.get("quota_error"):
+            st.error(
+                f"⚠️ **{result.get('error')}**\n\n"
+                f"💡 **What you can do:**\n"
+                f"1. Wait 24 hours for quota reset\n"
+                f"2. Use a different Gemini model in .env\n"
+                f"3. Enable billing in Google Cloud Console"
+            )
+        else:
+            st.error(
+                result.get("error")
+            )
+        
         return
 
 
@@ -1240,12 +1249,17 @@ with col1:
                 )
 
 
+                # Check if duplicate
+                if saved.get("status") == "duplicate":
+                    st.warning(
+                        f"⚠️ {saved.get('message')}"
+                    )
+                else:
+                    st.success(
 
-                st.success(
+                        "Application saved successfully 🚀"
 
-                    "Application saved successfully 🚀"
-
-                )
+                    )
 
 
 
