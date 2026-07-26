@@ -387,33 +387,6 @@ hr {
     box-shadow: 0 10px 30px rgba(3, 4, 94, 0.2);
 }
 
-/* Custom Quota Error Box */
-.quota-error-box {
-    background: linear-gradient(135deg, #1a1a2e, #16213e);
-    border: 2px solid #e94560;
-    border-radius: 16px;
-    padding: 30px;
-    margin: 20px 0;
-    animation: fadeInUp 0.6s ease-out;
-}
-
-.quota-error-box h3 {
-    color: #e94560;
-    margin-top: 0;
-}
-
-.quota-error-box .solution {
-    color: #CBD5E1;
-    margin: 10px 0;
-    padding-left: 20px;
-}
-
-.quota-error-box .solution-item {
-    color: #94A3B8;
-    margin: 8px 0;
-    padding-left: 10px;
-}
-
 </style>
 """,
 unsafe_allow_html=True
@@ -702,18 +675,9 @@ def run_analysis():
         
         # Check if it's a quota error
         if result.get("quota_error") or "quota" in str(result.get("error", "")).lower():
-            st.markdown(
-                """
-                <div class="quota-error-box">
-                    <h3>⚠️ AI Analysis Service Temporarily Unavailable</h3>
-                    <p style="color: #CBD5E1; margin-bottom: 15px;">
-                        The AI analysis service has reached its daily request limit.
-                    </p>
-                    <p style="color: #94A3B8; font-size: 14px; margin-bottom: 10px;">  
-                    </p>
-                </div>
-                """,
-                unsafe_allow_html=True
+            st.error(
+                "⚠️ **AI Service Unavailable**\n\n"
+                "The analysis service has reached its daily limit. Please try again later."
             )
         else:
             st.error(
