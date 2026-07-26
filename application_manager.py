@@ -336,7 +336,82 @@ def validate_text(
 
 
 # =====================================================
-# CREATE APPLICATION
+# CHECK DUPLICATE APPLICATION
+# =====================================================
+
+
+def check_duplicate_application(
+
+    company,
+
+    role,
+
+    user_id
+
+):
+
+    """
+    Check if an application with the same company and role already exists for this user.
+    Returns the application if found, None otherwise.
+    """
+
+    try:
+
+        response = (
+
+            supabase
+
+            .table(
+                "applications"
+            )
+
+            .select("*")
+
+            .eq(
+                "user_id",
+                user_id
+            )
+
+            .eq(
+                "company",
+                company
+            )
+
+            .eq(
+                "role",
+                role
+            )
+
+            .execute()
+
+        )
+
+
+        if response.data and len(response.data) > 0:
+
+            return response.data[0]
+
+
+        return None
+
+
+
+    except Exception as e:
+
+
+        logger.error(
+            f"Check duplicate failed: {e}"
+        )
+
+
+        return None
+
+
+
+
+
+# =====================================================
+# CREATE APPLICATION (with duplicate check)
 # =====================================================
 
 
@@ -362,6 +437,22 @@ def add_application(
         raise Exception(
             "User authentication required."
         )
+
+
+    # Check if application already exists
+    existing = check_duplicate_application(
+        company,
+        role,
+        user_id
+    )
+
+    if existing:
+        logger.info(f"Duplicate application found: {company} - {role}")
+        return {
+            "status": "duplicate",
+            "message": "Application already exists",
+            "application": existing
+        }
 
 
     # Get user email
@@ -492,7 +583,11 @@ def add_application(
 
 
 
-        return response.data
+        return {
+            "status": "success",
+            "message": "Application saved successfully",
+            "application": response.data[0] if response.data else None
+        }
 
 
 
@@ -654,6 +749,78 @@ def get_application(
 
         logger.error(
             f"Get application failed: {e}"
+        )
+
+
+        return None
+
+
+
+
+
+
+# =====================================================
+# GET APPLICATION BY COMPANY AND ROLE
+# =====================================================
+
+
+def get_application_by_company_role(
+
+    company,
+
+    role,
+
+    user_id
+
+):
+
+    """
+    Get a specific application by company, role, and user_id.
+    """
+
+    try:
+
+        response = (
+
+            supabase
+
+            .table(
+                "applications"
+            )
+
+            .select("*")
+
+            .eq(
+                "user_id",
+                user_id
+            )
+
+            .eq(
+                "company",
+                company
+            )
+
+            .eq(
+                "role",
+                role
+            )
+
+            .maybe_single()
+
+            .execute()
+
+        )
+
+
+        return response.data
+
+
+
+    except Exception as e:
+
+
+        logger.error(
+            f"Get application by company/role failed: {e}"
         )
 
 
