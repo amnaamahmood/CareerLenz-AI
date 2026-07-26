@@ -187,48 +187,25 @@ def trigger_n8n(
         return False
 
 
-    # Get user email for n8n
-    user_email = get_user_email()
-    user_id = get_user_id()
-
-
     event_payload = {
 
+        "application": APP_NAME,
 
-        "application":
+        "environment": APP_ENV,
 
-        APP_NAME,
+        "event": event_name,
 
-
-        "environment":
-
-        APP_ENV,
-
-
-        "event":
-
-        event_name,
-
-
-        "timestamp":
-
-        datetime.now(
+        "timestamp": datetime.now(
             timezone.utc
         ).isoformat(),
 
+        "user_id": get_user_id(),
 
-        "user_id":
+        "user_email": st.session_state.get(
+            "user_email"
+        ),
 
-        user_id,
-        
-        "user_email":
-
-        user_email,  # This ensures email is sent to n8n
-
-
-        "data":
-
-        payload or {}
+        "data": payload or {}
 
     }
 
@@ -388,36 +365,19 @@ def add_application(
 
     application = {
 
+        "user_id": user_id,
 
-        "user_id":
+        "user_email": st.session_state.user.email,
 
-        user_id,
+        "company": company,
 
+        "role": role,
 
-        "company":
+        "job_description": job_description,
 
-        company,
+        "status": "Applied",
 
-
-        "role":
-
-        role,
-
-
-        "job_description":
-
-        job_description,
-
-
-        "status":
-
-        "Applied",
-
-
-        "interview_date":
-
-        None
-
+        "interview_date": None
 
     }
 
