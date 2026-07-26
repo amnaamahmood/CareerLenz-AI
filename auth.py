@@ -202,34 +202,9 @@ def save_user_session(user):
 
 def restore_session():
 
-
-    try:
-
-
-        session = supabase.auth.get_session()
-
-
-
-        if session and session.user:
-
-
-            save_user_session(
-                session.user
-            )
-
-
-            return session.user
-
-
-
-    except Exception as e:
-
-
-        logger.error(
-            f"Session restore failed: {e}"
-        )
-
-
+    # Only restore from current session state, not from Supabase
+    if "user" in st.session_state:
+        return st.session_state.user
 
     return None
 
@@ -752,7 +727,7 @@ def exchange_verification_code(
 
 
 # =====================================================
-# LOGOUT
+# LOGOUT - UPDATED WITH CLEAR
 # =====================================================
 
 
@@ -772,22 +747,5 @@ def logout():
         )
 
 
-
-    keys=[
-
-        "user",
-
-        "user_id",
-
-        "user_email"
-
-    ]
-
-
-    for key in keys:
-
-
-        if key in st.session_state:
-
-
-            del st.session_state[key]
+    # Clear all session state
+    st.session_state.clear()
