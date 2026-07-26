@@ -432,32 +432,15 @@ def add_application(
 
             {
 
+                "application_id": application_id,
 
-                "application_id":
+                "company": company,
 
-                application_id,
+                "role": role,
 
+                "match_score": match_score,
 
-                "company":
-
-                company,
-
-
-                "role":
-
-                role,
-
-
-                "match_score":
-
-                match_score,
-
-
-                "user_email":
-
-                st.session_state.get(
-                    "user_email"
-                )
+                "user_email": st.session_state.user.email
 
             }
 
