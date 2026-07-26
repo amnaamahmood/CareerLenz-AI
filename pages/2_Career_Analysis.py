@@ -387,6 +387,33 @@ hr {
     box-shadow: 0 10px 30px rgba(3, 4, 94, 0.2);
 }
 
+/* Custom Quota Error Box */
+.quota-error-box {
+    background: linear-gradient(135deg, #1a1a2e, #16213e);
+    border: 2px solid #e94560;
+    border-radius: 16px;
+    padding: 30px;
+    margin: 20px 0;
+    animation: fadeInUp 0.6s ease-out;
+}
+
+.quota-error-box h3 {
+    color: #e94560;
+    margin-top: 0;
+}
+
+.quota-error-box .solution {
+    color: #CBD5E1;
+    margin: 10px 0;
+    padding-left: 20px;
+}
+
+.quota-error-box .solution-item {
+    color: #94A3B8;
+    margin: 8px 0;
+    padding-left: 10px;
+}
+
 </style>
 """,
 unsafe_allow_html=True
@@ -672,16 +699,44 @@ def run_analysis():
         
         # Check if it's a quota error
         if result.get("quota_error"):
-            st.error(
-                f"⚠️ **{result.get('error')}**\n\n"
-                f"💡 **What you can do:**\n"
-                f"1. Wait 24 hours for quota reset\n"
-                f"2. Use a different Gemini model in .env\n"
-                f"3. Enable billing in Google Cloud Console"
+            st.markdown(
+                """
+                <div class="quota-error-box">
+                    <h3>⚠️ AI Analysis Service Temporarily Unavailable</h3>
+                    <p style="color: #CBD5E1; margin-bottom: 15px;">
+                        The AI analysis service has reached its daily request limit.
+                    </p>
+                    <p style="color: #94A3B8; font-size: 14px; margin-bottom: 10px;">
+                        <strong>What this means:</strong>
+                    </p>
+                    <div class="solution-item">
+                        • The free tier allows 20 analyses per day
+                    </div>
+                    <div class="solution-item">
+                        • Today's limit has been reached
+                    </div>
+                    <p style="color: #94A3B8; font-size: 14px; margin-top: 15px; margin-bottom: 10px;">
+                        <strong>💡 What you can do:</strong>
+                    </p>
+                    <div class="solution-item">
+                        ⏰ Wait 24 hours for the quota to reset
+                    </div>
+                    <div class="solution-item">
+                        🔄 Try using a different AI model in the settings
+                    </div>
+                    <div class="solution-item">
+                        💳 Enable billing in Google Cloud Console for unlimited access
+                    </div>
+                    <p style="color: #64748B; font-size: 12px; margin-top: 15px; border-top: 1px solid #1E293B; padding-top: 10px;">
+                        For immediate assistance, please contact your administrator.
+                    </p>
+                </div>
+                """,
+                unsafe_allow_html=True
             )
         else:
             st.error(
-                result.get("error")
+                f"❌ {result.get('error')}"
             )
         
         return
