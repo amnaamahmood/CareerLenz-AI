@@ -722,7 +722,7 @@ def run_analysis():
                         <strong>💡 What you can do:</strong>
                     </p>
                     <div class="solution-item">
-                        ⏰ Wait 24 hours for the quota to reset
+                        ⏰ Wait for the quota to reset
                     </div>
                     <div class="solution-item">
                         🔄 Try using a different AI model in the settings
