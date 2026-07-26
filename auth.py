@@ -189,12 +189,37 @@ def save_user_session(user):
         return
 
 
+    # Get email from user object - try multiple sources
+    email = getattr(user, 'email', None)
+    
+    # If email is None, try to get it from user_metadata
+    if not email:
+        user_metadata = getattr(user, 'user_metadata', {})
+        email = user_metadata.get('email')
+    
+    # If still None, try to get from raw user data
+    if not email:
+        if hasattr(user, '_data'):
+            email = user._data.get('email')
+    
+    # If still None, set a placeholder but log warning
+    if not email:
+        logger.warning(f"No email found for user: {user.id if hasattr(user, 'id') else 'unknown'}")
+        email = "user@example.com"  # Placeholder - but this should never happen
+
 
     st.session_state.user = user
 
-    st.session_state.user_id = user.id
+    st.session_state.user_id = getattr(user, 'id', None)
 
-    st.session_state.user_email = user.email
+    st.session_state.user_email = email
+    
+    # Also store user metadata for name
+    user_metadata = getattr(user, 'user_metadata', {})
+    st.session_state.user_name = user_metadata.get('full_name', 'Career User')
+
+    # Log success
+    logger.info(f"User session saved: {email}")
 
 
 
@@ -228,6 +253,23 @@ def get_user_id():
 
     return st.session_state.get(
         "user_id"
+    )
+
+
+def get_user_email():
+
+
+    return st.session_state.get(
+        "user_email"
+    )
+
+
+def get_user_name():
+
+
+    return st.session_state.get(
+        "user_name",
+        "Career User"
     )
 
 
