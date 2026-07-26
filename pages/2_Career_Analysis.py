@@ -694,11 +694,14 @@ def run_analysis():
         )
 
 
+    # Debug: Print the result to see what's being returned
+    logger.info(f"Analysis result: {result}")
+
 
     if result.get("error"):
         
         # Check if it's a quota error
-        if result.get("quota_error"):
+        if result.get("quota_error") or "quota" in str(result.get("error", "")).lower():
             st.markdown(
                 """
                 <div class="quota-error-box">
