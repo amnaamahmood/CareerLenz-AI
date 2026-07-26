@@ -4,19 +4,31 @@ from database import supabase
 
 
 # =====================================
-# CURRENT USER ID
+# CURRENT USER ID - IMPROVED
 # =====================================
 
 def get_user_id():
 
+    # First try stored user_id
+    user_id = st.session_state.get(
+        "user_id"
+    )
+
+    if user_id:
+        return user_id
+
+    # Fallback to user object
     user = st.session_state.get(
-        "user",
-        None
+        "user"
     )
 
     if user:
-
-        return user.id
+        # Try to get id from user object
+        user_id = getattr(user, 'id', None)
+        if user_id:
+            # Cache it for future use
+            st.session_state["user_id"] = user_id
+            return user_id
 
     return None
 
