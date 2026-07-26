@@ -336,7 +336,7 @@ def validate_text(
 
 
 # =====================================================
-# CHECK DUPLICATE APPLICATION
+# CHECK DUPLICATE APPLICATION - IMPROVED
 # =====================================================
 
 
@@ -352,11 +352,19 @@ def check_duplicate_application(
 
     """
     Check if an application with the same company and role already exists for this user.
+    Uses case-insensitive and trimmed comparison.
     Returns the application if found, None otherwise.
     """
 
     try:
 
+        # Clean the input values
+        company_clean = company.strip().lower()
+        role_clean = role.strip().lower()
+
+        logger.info(f"Checking duplicate for: {company_clean} - {role_clean} (User: {user_id})")
+
+        # First, get all applications for this user
         response = (
 
             supabase
@@ -372,26 +380,27 @@ def check_duplicate_application(
                 user_id
             )
 
-            .eq(
-                "company",
-                company
-            )
-
-            .eq(
-                "role",
-                role
-            )
-
             .execute()
 
         )
 
 
-        if response.data and len(response.data) > 0:
+        if not response.data:
+            logger.info("No existing applications found for this user")
+            return None
 
-            return response.data[0]
+
+        # Manually check for duplicates with case-insensitive comparison
+        for app in response.data:
+            app_company = app.get("company", "").strip().lower()
+            app_role = app.get("role", "").strip().lower()
+            
+            if app_company == company_clean and app_role == role_clean:
+                logger.info(f"Duplicate found! Existing ID: {app.get('id')}")
+                return app
 
 
+        logger.info("No duplicate found")
         return None
 
 
@@ -439,18 +448,23 @@ def add_application(
         )
 
 
+    # Clean the inputs
+    company_clean = company.strip()
+    role_clean = role.strip()
+
+
     # Check if application already exists
     existing = check_duplicate_application(
-        company,
-        role,
+        company_clean,
+        role_clean,
         user_id
     )
 
     if existing:
-        logger.info(f"Duplicate application found: {company} - {role}")
+        logger.info(f"⚠️ Duplicate application found: {company_clean} - {role_clean}")
         return {
             "status": "duplicate",
-            "message": "Application already exists",
+            "message": "You have already applied to this position",
             "application": existing
         }
 
@@ -460,16 +474,17 @@ def add_application(
     
     if not user_email:
         logger.warning("No user email found in session state!")
+        user_email = "unknown@example.com"
 
 
     company = validate_text(
-        company,
+        company_clean,
         "Company"
     )
 
 
     role = validate_text(
-        role,
+        role_clean,
         "Role"
     )
 
@@ -555,7 +570,7 @@ def add_application(
 
             "user_id": user_id,
 
-            "user_email": user_email,  # Explicitly include email
+            "user_email": user_email,
 
             "match_score": match_score,
 
@@ -569,7 +584,7 @@ def add_application(
 
 
         # Log what we're sending
-        logger.info(f"Sending application data to n8n: {n8n_payload}")
+        logger.info(f"✅ New application saved: {company} - {role}")
 
 
         trigger_n8n(
@@ -597,7 +612,7 @@ def add_application(
 
 
         logger.error(
-            f"Create application failed: {e}"
+            f"❌ Create application failed: {e}"
         )
 
 
@@ -767,9 +782,7 @@ def get_application(
 def get_application_by_company_role(
 
     company,
-
     role,
-
     user_id
 
 ):
@@ -1199,6 +1212,7 @@ def get_application_stats():
         "offer":
 
         0,
+
 
 
         "rejected":
