@@ -50,26 +50,8 @@ if not GEMINI_API_KEY:
     )
 
 
-
-client = genai.Client(
-    api_key=GEMINI_API_KEY
-)
-
-# Groq client
-groq_client = None
-
-if GROQ_API_KEY:
-    groq_client = Groq(
-        api_key=GROQ_API_KEY
-    )
-    logger.info("✅ Groq client initialized")
-else:
-    logger.warning("⚠️ Groq API key not found. Groq fallback disabled.")
-
-
-
 # =====================================================
-# LOGGING
+# LOGGING - MOVED UP BEFORE CLIENT INITIALIZATION
 # =====================================================
 
 
@@ -81,6 +63,32 @@ logging.basicConfig(
 logger = logging.getLogger(
     "SkillGap-AI"
 )
+
+
+# =====================================================
+# GEMINI CLIENT
+# =====================================================
+
+
+client = genai.Client(
+    api_key=GEMINI_API_KEY
+)
+
+
+# =====================================================
+# GROQ CLIENT (FALLBACK)
+# =====================================================
+
+
+groq_client = None
+
+if GROQ_API_KEY:
+    groq_client = Groq(
+        api_key=GROQ_API_KEY
+    )
+    logger.info("✅ Groq client initialized")
+else:
+    logger.warning("⚠️ Groq API key not found. Groq fallback disabled.")
 
 
 
