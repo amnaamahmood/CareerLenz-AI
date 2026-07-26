@@ -709,29 +709,7 @@ def run_analysis():
                     <p style="color: #CBD5E1; margin-bottom: 15px;">
                         The AI analysis service has reached its daily request limit.
                     </p>
-                    <p style="color: #94A3B8; font-size: 14px; margin-bottom: 10px;">
-                        <strong>What this means:</strong>
-                    </p>
-                    <div class="solution-item">
-                        • The free tier allows 20 analyses per day
-                    </div>
-                    <div class="solution-item">
-                        • Today's limit has been reached
-                    </div>
-                    <p style="color: #94A3B8; font-size: 14px; margin-top: 15px; margin-bottom: 10px;">
-                        <strong>💡 What you can do:</strong>
-                    </p>
-                    <div class="solution-item">
-                        ⏰ Wait for the quota to reset
-                    </div>
-                    <div class="solution-item">
-                        🔄 Try using a different AI model in the settings
-                    </div>
-                    <div class="solution-item">
-                        💳 Enable billing in Google Cloud Console for unlimited access
-                    </div>
-                    <p style="color: #64748B; font-size: 12px; margin-top: 15px; border-top: 1px solid #1E293B; padding-top: 10px;">
-                        For immediate assistance, please contact your administrator.
+                    <p style="color: #94A3B8; font-size: 14px; margin-bottom: 10px;">  
                     </p>
                 </div>
                 """,
