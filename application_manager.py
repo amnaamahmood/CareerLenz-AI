@@ -336,82 +336,81 @@ def validate_text(
 
 
 # =====================================================
-# CHECK DUPLICATE APPLICATION - IMPROVED
+# CHECK DUPLICATE APPLICATION - FIXED FOR NULL USER_ID
 # =====================================================
 
 
-def check_duplicate_application(
-
-    company,
-
-    role,
-
-    user_id
-
-):
-
-    """
-    Check if an application with the same company and role already exists for this user.
-    Uses case-insensitive and trimmed comparison.
-    Returns the application if found, None otherwise.
-    """
+def check_duplicate_application(company, role, user_id):
 
     try:
 
-        # Clean the input values
         company_clean = company.strip().lower()
         role_clean = role.strip().lower()
 
-        logger.info(f"Checking duplicate for: {company_clean} - {role_clean} (User: {user_id})")
+        logger.info(f"🔍 Checking duplicate for: '{company_clean}' - '{role_clean}' (User: {user_id})")
 
-        # First, get all applications for this user
+        # Get ALL applications (no user_id filter)
         response = (
-
             supabase
-
-            .table(
-                "applications"
-            )
-
+            .table("applications")
             .select("*")
-
-            .eq(
-                "user_id",
-                user_id
-            )
-
             .execute()
-
         )
 
-
         if not response.data:
-            logger.info("No existing applications found for this user")
+            logger.info("📭 No applications found in database")
             return None
 
+        logger.info(f"📊 Found {len(response.data)} total applications in database")
 
-        # Manually check for duplicates with case-insensitive comparison
+        # Check each application for duplicate
         for app in response.data:
-            app_company = app.get("company", "").strip().lower()
-            app_role = app.get("role", "").strip().lower()
-            
-            if app_company == company_clean and app_role == role_clean:
-                logger.info(f"Duplicate found! Existing ID: {app.get('id')}")
-                return app
 
+            app_company = (
+                app.get("company") or ""
+            ).strip().lower()
 
-        logger.info("No duplicate found")
+            app_role = (
+                app.get("role") or ""
+            ).strip().lower()
+
+            # Check if company and role match
+            if (
+                app_company == company_clean
+                and app_role == role_clean
+            ):
+
+                # Check if user_id matches OR old data has null user_id
+                app_user_id = app.get("user_id")
+                
+                if (
+                    app_user_id == user_id
+                    or app_user_id is None
+                ):
+
+                    logger.info(
+                        f"⚠️ Duplicate found! ID: {app.get('id')}, "
+                        f"User: {app_user_id}, "
+                        f"Company: {app_company}, "
+                        f"Role: {app_role}"
+                    )
+
+                    return app
+                else:
+                    logger.info(
+                        f"⏭️ Skipping app {app.get('id')} - user_id mismatch "
+                        f"({app_user_id} vs {user_id})"
+                    )
+
+        logger.info("✅ No duplicate found")
         return None
-
 
 
     except Exception as e:
 
-
         logger.error(
-            f"Check duplicate failed: {e}"
+            f"❌ Duplicate check error: {e}"
         )
-
 
         return None
 
@@ -461,7 +460,7 @@ def add_application(
     )
 
     if existing:
-        logger.info(f"⚠️ Duplicate application found: {company_clean} - {role_clean}")
+        logger.info(f"⚠️ Duplicate application detected: {company_clean} - {role_clean}")
         return {
             "status": "duplicate",
             "message": "You have already applied to this position",
@@ -473,7 +472,7 @@ def add_application(
     user_email = get_user_email()
     
     if not user_email:
-        logger.warning("No user email found in session state!")
+        logger.warning("⚠️ No user email found in session state!")
         user_email = "unknown@example.com"
 
 
@@ -584,7 +583,7 @@ def add_application(
 
 
         # Log what we're sending
-        logger.info(f"✅ New application saved: {company} - {role}")
+        logger.info(f"✅ New application saved: {company} - {role} (ID: {application_id})")
 
 
         trigger_n8n(
@@ -1212,7 +1211,6 @@ def get_application_stats():
         "offer":
 
         0,
-
 
 
         "rejected":
