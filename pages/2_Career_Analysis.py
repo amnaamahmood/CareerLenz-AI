@@ -88,7 +88,6 @@ p,label {
     height:45px;
     font-weight:600;
     transition: all 0.3s ease !important;
-    animation: pulse 2s infinite;
 }
 
 .stButton button:hover {
@@ -151,18 +150,6 @@ textarea:focus, input:focus {
     to {
         opacity: 1;
         transform: translateX(0);
-    }
-}
-
-@keyframes pulse {
-    0% {
-        box-shadow: 0 0 0 0 rgba(3, 4, 94, 0.4);
-    }
-    70% {
-        box-shadow: 0 0 0 10px rgba(3, 4, 94, 0);
-    }
-    100% {
-        box-shadow: 0 0 0 0 rgba(3, 4, 94, 0);
     }
 }
 
@@ -243,7 +230,7 @@ textarea:focus, input:focus {
 
 /* Spinner animation */
 .stSpinner {
-    animation: pulse 1.5s ease-in-out infinite;
+    animation: shimmer 1.5s ease-in-out infinite;
 }
 
 /* Divider animation */
@@ -298,19 +285,7 @@ hr {
 
 /* Error box animation */
 .stError {
-    animation: shake 0.5s ease-out;
-}
-
-@keyframes shake {
-    0%, 100% {
-        transform: translateX(0);
-    }
-    25% {
-        transform: translateX(-10px);
-    }
-    75% {
-        transform: translateX(10px);
-    }
+    animation: fadeIn 0.5s ease-out;
 }
 
 /* Floating animation for icons */
@@ -1188,7 +1163,7 @@ col1,col2 = st.columns(2)
 
 
 # =====================================================
-# SAVE APPLICATION
+# SAVE APPLICATION - UPDATED WITH FULL PAYLOAD
 # =====================================================
 
 
@@ -1280,14 +1255,21 @@ with col1:
 
                     {
 
-                        "company":
+                        "company": company,
 
-                        company,
+                        "role": role,
 
+                        "job_description": st.session_state.job_description,
 
-                        "role":
+                        "user_email": st.session_state.get(
+                            "user_email",
+                            ""
+                        ),
 
-                        role
+                        "user_id": st.session_state.get(
+                            "user_id",
+                            ""
+                        )
 
                     }
 
@@ -1330,5 +1312,5 @@ with col2:
         st.switch_page(
 
             "pages/4_Interview_Practice.py"
-   
+     
         )
