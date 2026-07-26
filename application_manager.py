@@ -133,6 +133,19 @@ def get_user_id():
     return None
 
 
+def get_user_email():
+
+    user = st.session_state.get(
+        "user"
+    )
+
+    if user:
+
+        return user.email
+
+    return None
+
+
 
 
 
@@ -174,7 +187,9 @@ def trigger_n8n(
         return False
 
 
-
+    # Get user email for n8n
+    user_email = get_user_email()
+    user_id = get_user_id()
 
 
     event_payload = {
@@ -204,7 +219,11 @@ def trigger_n8n(
 
         "user_id":
 
-        get_user_id(),
+        user_id,
+        
+        "user_email":
+
+        user_email,  # This ensures email is sent to n8n
 
 
         "data":
@@ -471,7 +490,14 @@ def add_application(
 
                 "match_score":
 
-                match_score
+                match_score,
+
+
+                "user_email":
+
+                st.session_state.get(
+                    "user_email"
+                )
 
             }
 
@@ -746,7 +772,10 @@ def update_application_status(
 
                 "status":
 
-                status
+                status,
+                
+                "user_email":  # Include user_email in status update too
+                get_user_email()
 
             }
 
@@ -863,7 +892,10 @@ def update_interview_date(
 
                 "interview_date":
 
-                interview_date
+                interview_date,
+                
+                "user_email":  # Include user_email in interview update too
+                get_user_email()
 
             }
 
@@ -960,7 +992,10 @@ def delete_application(
 
                 "application_id":
 
-                application_id
+                application_id,
+                
+                "user_email":  # Include user_email in delete too
+                get_user_email()
 
             }
 
