@@ -201,9 +201,7 @@ def trigger_n8n(
 
         "user_id": get_user_id(),
 
-        "user_email": st.session_state.get(
-            "user_email"
-        ),
+        "user_email": st.session_state.user.email,
 
         "data": payload or {}
 
