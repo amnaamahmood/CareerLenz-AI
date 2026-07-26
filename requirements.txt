@@ -9,3 +9,4 @@ numpy
 pillow
 GitPython
 plotly
+groq==1.6.0
