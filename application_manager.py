@@ -426,7 +426,7 @@ def add_application(
 
         trigger_n8n(
 
-            "application_created",
+            "application_saved",
 
             {
 
@@ -436,9 +436,13 @@ def add_application(
 
                 "role": role,
 
-                "match_score": match_score,
+                "job_description": job_description,
 
-                "user_email": st.session_state.user.email
+                "user_id": user_id,
+
+                "user_email": st.session_state.user.email,
+
+                "match_score": match_score
 
             }
 
