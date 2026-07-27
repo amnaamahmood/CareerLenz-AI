@@ -249,22 +249,36 @@ Returns a JSON success response to the Streamlit application, closing the reques
 
 ## 📸 Application Screenshots
 
+
+**Login**
+
+![Login](login.png)
+
+---
+
+
 **Home**
 
 ![Home](home.png)
 
 ---
+
+
 **Dashboard**
 
 ![Dashboard](dashboard.png)
 
 ---
 
+
 **Resume Analysis**
+
+![Resume_Upload](resume_uploaded.png)
 
 ![Resume Analysis](resume_analysis.png)
 
 ---
+
 
 **Interview Practice**
 
@@ -278,6 +292,7 @@ Returns a JSON success response to the Streamlit application, closing the reques
 ![Application Tracking](application.png)
 
 ---
+
 
 ## 🤖 Automation Screenshots
 
@@ -294,6 +309,8 @@ Returns a JSON success response to the Streamlit application, closing the reques
 ---
 
 **Confirmation Email**
+
+![Email sent  Notification](email_send.png)
 
 ![Email Notification](automation_email.png)
 
