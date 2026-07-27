@@ -39,19 +39,13 @@ st.set_page_config(
 # CHECK AUTHENTICATION
 # =====================================================
 
-# Check if user is logged in
 if "user" not in st.session_state or st.session_state.user is None:
     st.error("⚠️ Please log in first to access this page.")
-    
-    # FIX: Use st.page_link instead of st.switch_page
     st.page_link("app.py", label="Go to Login", icon="🔐")
-    
-    # Or use a button with rerun
     if st.button("Go to Login", use_container_width=True):
         st.session_state.page = "login"
         st.rerun()
-    
-    st.stop()  # Stop execution if not logged in
+    st.stop()
 
 # =====================================================
 # STYLING
@@ -125,7 +119,10 @@ DEFAULT_STATE = {
     "analysis": None,
     "resume_text": "",
     "job_description": "",
-    "github_data": None
+    "github_data": None,
+    # FIX: Add flags to prevent duplicate saves
+    "application_saved": False,
+    "last_application_hash": None
 }
 
 for key, value in DEFAULT_STATE.items():
@@ -150,7 +147,6 @@ st.markdown(
 # USER INFO
 # =====================================================
 
-# Show user info
 user_name = st.session_state.get("user_name", "User")
 user_email = st.session_state.get("user_email", "")
 
@@ -237,6 +233,10 @@ def run_analysis():
     st.session_state.resume_text = resume_text
     st.session_state.job_description = job_description
     st.session_state.github_data = github_data
+    
+    # Reset save flag when new analysis is done
+    st.session_state.application_saved = False
+    st.session_state.last_application_hash = None
     
     trigger_n8n(
         "career_analysis_completed",
@@ -398,7 +398,7 @@ if st.session_state.analysis:
         st.info(analysis.get("mentor_summary", "No mentor advice available."))
     
     # =====================================================
-    # CAREER ACTIONS
+    # CAREER ACTIONS - FIXED TO PREVENT DUPLICATE SAVES
     # =====================================================
     
     st.divider()
@@ -406,16 +406,21 @@ if st.session_state.analysis:
     
     col1, col2 = st.columns(2)
     
-    # Save Application
+    # Save Application - FIXED
     with col1:
-        if st.button("💼 Save Job Application", use_container_width=True):
-            if not st.session_state.analysis:
-                st.warning("Run analysis first.")
+        # Get current application data for hash
+        company = analysis.get("company_name", "Unknown Company")
+        role = analysis.get("job_title", "Unknown Role")
+        
+        # Create a unique hash for this application
+        current_app_hash = f"{company}_{role}_{st.session_state.user_id}"
+        
+        # Only show button if not already saved or if data changed
+        if st.button("💼 Save Job Application", use_container_width=True, key="save_application"):
+            # Check if already saved
+            if st.session_state.application_saved and st.session_state.last_application_hash == current_app_hash:
+                st.info("✅ This application has already been saved.")
             else:
-                analysis = st.session_state.analysis
-                company = analysis.get("company_name", "Unknown Company")
-                role = analysis.get("job_title", "Unknown Role")
-                
                 try:
                     saved = add_application(
                         company,
@@ -434,6 +439,10 @@ if st.session_state.analysis:
                         **Role:** {role}
                         **Status:** Applied
                         """)
+                        
+                        # Mark as saved
+                        st.session_state.application_saved = True
+                        st.session_state.last_application_hash = current_app_hash
                     
                     trigger_n8n(
                         "application_saved",
@@ -447,20 +456,33 @@ if st.session_state.analysis:
                     )
                 except Exception as e:
                     st.error(f"Application save failed: {e}")
+        
+        # Show saved status if applicable
+        if st.session_state.application_saved and st.session_state.last_application_hash == current_app_hash:
+            st.info("✅ Application already saved in your profile")
     
-    # Interview Practice - FIXED
+    # Interview Practice
     with col2:
         if st.button("🎤 Start Interview Practice", use_container_width=True):
-            # FIX: Use st.navigation or just rerun with a flag
-            # Option 1: Use query params to indicate navigation
             st.query_params["page"] = "interview"
             st.rerun()
     
     # Check if we need to navigate to interview page
     if st.query_params.get("page") == "interview":
-        # Clear the query param to prevent loops
         st.query_params.clear()
-        # Navigate to interview page using st.switch_page
         st.switch_page("pages/4_Interview_Practice.py")
 
+# =====================================================
+# LOGOUT BUTTON
+# =====================================================
 
+st.divider()
+
+if st.button("🚪 Logout", use_container_width=True):
+    try:
+        from auth import logout
+        logout()
+        st.rerun()
+    except ImportError:
+        st.session_state.clear()
+        st.rerun()
