@@ -22,118 +22,64 @@ st.set_page_config(
 
 
 # =====================================================
-# DISABLE BROWSER AUTOFILL / AUTOCOMPLETE - ENHANCED
+# DISABLE BROWSER AUTOFILL / AUTOCOMPLETE
 # =====================================================
+# Chrome ignores autocomplete="off" on login/signup-style fields
+# (it heuristically decides a field is "email"/"username"/"password"
+# based on name/id/type/nearby label text, and once it decides that,
+# it shows saved suggestions regardless of autocomplete="off").
+#
+# The reliable fix:
+#   1. Use a random, non-standard autocomplete token instead of "off"
+#      (Chrome doesn't recognize it, so it disables suggestions
+#      entirely instead of falling back to its own guess).
+#   2. Use autocomplete="new-password" specifically for password
+#      fields (tells Chrome this is a new credential, not one to
+#      suggest from the saved list).
+#   3. Randomize name/id so Chrome's field-matching heuristic can't
+#      key off of them.
+#   4. Add data-lpignore / data-1p-ignore / data-form-type for
+#      LastPass / 1Password / Dashlane, which don't obey the same
+#      rules as Chrome's built-in autofill.
+#   5. Guard with a data attribute so the MutationObserver doesn't
+#      re-randomize fields (and disrupt typing) on every rerun.
 
 components.html(
     """
     <script>
+    function randomToken() {
+        return 'no-autofill-' + Math.random().toString(36).slice(2);
+    }
+
     function disableAutofill() {
         const inputs = window.parent.document.querySelectorAll('input');
         inputs.forEach((el) => {
-            // Remove ALL autocomplete attributes
-            el.setAttribute('autocomplete', 'off');
+            if (el.dataset.autofillPatched) return;
+
+            const isPassword = el.type === 'password';
+
+            el.setAttribute('autocomplete', isPassword ? 'new-password' : randomToken());
             el.setAttribute('autocorrect', 'off');
             el.setAttribute('autocapitalize', 'off');
             el.setAttribute('spellcheck', 'false');
-            
-            // Add random name attributes to prevent browser from recognizing fields
-            const randomId = 'field_' + Math.random().toString(36).substring(2, 15);
-            el.setAttribute('name', randomId);
-            el.setAttribute('id', randomId);
-            
-            // Clear any existing values
-            el.value = '';
-            
-            // For password fields specifically
-            if (el.type === 'password') {
-                el.setAttribute('autocomplete', 'new-password');
-            }
+
+            el.setAttribute('name', randomToken());
+            if (el.id) el.setAttribute('id', randomToken());
+
+            el.setAttribute('data-lpignore', 'true');
+            el.setAttribute('data-1p-ignore', 'true');
+            el.setAttribute('data-form-type', 'other');
+
+            el.dataset.autofillPatched = 'true';
         });
     }
-    
-    // Run immediately
+
     disableAutofill();
-    
-    // Run on any DOM changes
     const observer = new MutationObserver(disableAutofill);
-    observer.observe(window.parent.document.body, { 
-        childList: true, 
-        subtree: true 
-    });
-    
-    // Also run on focus events
-    document.addEventListener('focusin', function(e) {
-        if (e.target.tagName === 'INPUT') {
-            e.target.setAttribute('autocomplete', 'off');
-            e.target.setAttribute('name', 'field_' + Math.random().toString(36).substring(2, 15));
-        }
-    });
+    observer.observe(window.parent.document.body, { childList: true, subtree: true });
     </script>
     """,
     height=0,
-)
-
-
-# =====================================================
-# ADDITIONAL CSS TO HIDE BROWSER AUTOFILL STYLES
-# =====================================================
-
-st.markdown(
-"""
-<style>
-/* Completely hide browser autofill suggestions */
-input:-webkit-autofill,
-input:-webkit-autofill:hover,
-input:-webkit-autofill:focus,
-input:-webkit-autofill:active {
-    -webkit-box-shadow: 0 0 0 30px #020617 inset !important;
-    -webkit-text-fill-color: white !important;
-    caret-color: white !important;
-    transition: background-color 5000s ease-in-out 0s;
-}
-
-/* Hide the autofill icon */
-input::-webkit-credentials-auto-fill-button {
-    display: none !important;
-    visibility: hidden !important;
-    pointer-events: none !important;
-}
-
-/* For Firefox */
-input:-moz-autofill {
-    background-color: #020617 !important;
-    color: white !important;
-}
-
-/* For Edge/IE */
-input:-ms-input-placeholder {
-    color: transparent !important;
-}
-
-/* Make sure inputs have no placeholder text */
-input::placeholder {
-    color: transparent !important;
-    opacity: 0 !important;
-}
-
-input::-webkit-input-placeholder {
-    color: transparent !important;
-    opacity: 0 !important;
-}
-
-input::-moz-placeholder {
-    color: transparent !important;
-    opacity: 0 !important;
-}
-
-input:-ms-input-placeholder {
-    color: transparent !important;
-    opacity: 0 !important;
-}
-</style>
-""",
-unsafe_allow_html=True
 )
 
 
@@ -516,7 +462,7 @@ login_tab, signup_tab = st.tabs(
 
 
 # =====================================================
-# LOGIN - WITH PLACEHOLDER REMOVED
+# LOGIN
 # =====================================================
 
 
@@ -536,7 +482,6 @@ with login_tab:
 
     login_email_input = st.text_input(
         "Email",
-        placeholder="",
         key="login_email"
     )
 
@@ -544,7 +489,6 @@ with login_tab:
     login_password = st.text_input(
         "Password",
         type="password",
-        placeholder="",
         key="login_password"
     )
 
@@ -604,7 +548,7 @@ with login_tab:
 
 
 # =====================================================
-# SIGNUP - WITH PLACEHOLDER REMOVED
+# SIGNUP
 # =====================================================
 
 
@@ -625,34 +569,44 @@ with signup_tab:
 
 
     signup_name = st.text_input(
+
         "Full Name",
-        placeholder="",
+
         key="signup_name"
+
     )
 
 
     signup_email_input = st.text_input(
+
         "Email",
-        placeholder="",
+
         key="signup_email"
+
     )
 
 
 
     signup_password = st.text_input(
+
         "Password",
+
         type="password",
-        placeholder="",
+
         key="signup_password"
+
     )
 
 
 
     signup_confirm = st.text_input(
+
         "Confirm Password",
+
         type="password",
-        placeholder="",
+
         key="signup_confirm"
+
     )
 
 
@@ -660,32 +614,74 @@ with signup_tab:
 
 
     if st.button(
+
         "Create Account",
+
         key="signup_submit"
+
     ):
 
 
         with signup_message_slot:
 
             if not signup_name.strip():
-                st.error("Name is required.")
+
+                st.error(
+                    "Name is required."
+                )
+                
             elif not signup_email_input.strip():
-                st.error("Email is required.")
-            elif signup_password != signup_confirm:
-                st.error("Passwords do not match.")
-            elif len(signup_password) < 8:
-                st.error("Password must contain at least 8 characters.")
-            else:
-                result = signup_email(
-                    signup_email_input,
-                    signup_password,
-                    signup_name
+                
+                st.error(
+                    "Email is required."
                 )
 
+            elif signup_password != signup_confirm:
+
+
+                st.error(
+                    "Passwords do not match."
+                )
+
+
+
+            elif len(signup_password) < 8:
+
+
+                st.error(
+                    "Password must contain at least 8 characters."
+                )
+
+
+
+            else:
+
+
+                result = signup_email(
+
+                    signup_email_input,
+
+                    signup_password,
+
+                    signup_name
+
+                )
+
+
+
                 if result["success"]:
-                    st.success("Account created successfully! You can now login.")
+                    
+                    st.success(
+                        "Account created successfully! You can now login."
+                    )
+
+
                 else:
-                    st.error(result["error"])
+
+
+                    st.error(
+                        result["error"]
+                    )
 
 
 
