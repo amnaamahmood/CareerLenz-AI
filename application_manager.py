@@ -253,13 +253,13 @@ def trigger_n8n(
             timezone.utc
         ).isoformat(),
 
+        **(payload or {}),
+
         "user_id": user_id,
 
         "user_email": user_email,
 
-        "user_name": user_name,
-
-        "data": payload or {}
+        "user_name": user_name
 
     }
 
