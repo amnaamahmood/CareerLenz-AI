@@ -387,6 +387,84 @@ hr {
     box-shadow: 0 10px 30px rgba(3, 4, 94, 0.2);
 }
 
+/* Professional Success Popup */
+.success-popup {
+    background: linear-gradient(135deg, #0f172a, #1e293b);
+    border: 1px solid #10b981;
+    border-radius: 16px;
+    padding: 28px 32px;
+    margin: 20px 0;
+    animation: fadeInUp 0.6s ease-out;
+    box-shadow: 0 20px 60px rgba(0, 0, 0, 0.5);
+}
+
+.success-popup .icon {
+    font-size: 48px;
+    text-align: center;
+    margin-bottom: 8px;
+}
+
+.success-popup h3 {
+    color: #10b981;
+    text-align: center;
+    margin: 8px 0;
+    font-size: 22px;
+}
+
+.success-popup .subtitle {
+    color: #94a3b8;
+    text-align: center;
+    font-size: 14px;
+    margin-bottom: 16px;
+}
+
+.success-popup .details {
+    background: #0f172a;
+    border-radius: 10px;
+    padding: 14px 18px;
+    margin: 12px 0;
+}
+
+.success-popup .details p {
+    color: #cbd5e1;
+    font-size: 14px;
+    margin: 4px 0;
+}
+
+.success-popup .details .label {
+    color: #64748b;
+    font-size: 12px;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+}
+
+.success-popup .checklist {
+    margin: 12px 0;
+}
+
+.success-popup .checklist-item {
+    color: #94a3b8;
+    font-size: 13px;
+    padding: 4px 0;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+.success-popup .checklist-item .check {
+    color: #10b981;
+    font-size: 16px;
+}
+
+.success-popup .footer-note {
+    color: #64748b;
+    font-size: 12px;
+    text-align: center;
+    margin-top: 12px;
+    border-top: 1px solid #1e293b;
+    padding-top: 12px;
+}
+
 </style>
 """,
 unsafe_allow_html=True
@@ -1172,7 +1250,7 @@ col1,col2 = st.columns(2)
 
 
 # =====================================================
-# SAVE APPLICATION - UPDATED WITH FULL PAYLOAD
+# SAVE APPLICATION - WITH PROFESSIONAL POPUP
 # =====================================================
 
 
@@ -1255,10 +1333,38 @@ with col1:
                         f"⚠️ {saved.get('message')}"
                     )
                 else:
-                    st.success(
-
-                        "Application saved successfully 🚀"
-
+                    # Professional Success Popup
+                    st.markdown(
+                        f"""
+                        <div class="success-popup">
+                            <div class="icon">✅</div>
+                            <h3>Application Saved Successfully</h3>
+                            <div class="subtitle">Your application has been submitted and is being processed</div>
+                            
+                            <div class="details">
+                                <p><span class="label">Company</span><br>{company}</p>
+                                <p><span class="label">Role</span><br>{role}</p>
+                                <p><span class="label">Status</span><br><span style="color: #10b981;">Applied</span></p>
+                            </div>
+                            
+                            <div class="checklist">
+                                <div class="checklist-item">
+                                    <span class="check">✓</span> Application recorded in your dashboard
+                                </div>
+                                <div class="checklist-item">
+                                    <span class="check">✓</span> AI analysis saved for future reference
+                                </div>
+                                <div class="checklist-item">
+                                    <span class="check">✉</span> Confirmation email sent to your inbox
+                                </div>
+                            </div>
+                            
+                            <div class="footer-note">
+                                📧 Please check your email inbox (and spam folder) for the confirmation.
+                            </div>
+                        </div>
+                        """,
+                        unsafe_allow_html=True
                     )
 
 
