@@ -245,24 +245,38 @@ Returns a JSON success response to the Streamlit application, closing the reques
 - An n8n instance with the workflow above imported (for email automation)
 
 
-## 📸 Application Screenshots
+
 
 ## 📸 Application Screenshots
 
 **Home**
+
 ![Home](home.png)
 
+---
 **Dashboard**
+
 ![Dashboard](dashboard.png)
 
+---
+
 **Resume Analysis**
+
 ![Resume Analysis](resume_analysis.png)
 
+---
+
 **Interview Practice**
+
 ![Interview Practice](interview.png)
 
+---
+
+
 **Application Tracking**
+
 ![Application Tracking](application.png)
+
 ---
 
 ## 🤖 Automation Screenshots
