@@ -218,7 +218,7 @@ background:#023E8A !important;
 }
 
 
-/* EMAIL WARNING NOTE */
+/* EMAIL WARNING NOTE - POPUP STYLE */
 
 .email-warning{
 
@@ -238,6 +238,17 @@ font-size:13px;
 
 color:#FCD34D;
 
+animation: pulse-warning 2s infinite;
+
+}
+
+
+@keyframes pulse-warning {
+
+0% { opacity: 1; }
+50% { opacity: 0.7; }
+100% { opacity: 1; }
+
 }
 
 
@@ -249,7 +260,6 @@ color:#FCD34D;
 min-height:56px;
 
 }
-
 
 </style>
 
@@ -548,15 +558,26 @@ with signup_tab:
     )
 
 
-    # ADDED: warning shown right before the email field, so users
-    # see it before they type a fake/random email
+    # ADDED: POPUP-STYLE WARNING that shows right before the email field
+    # with a pulsing animation to grab attention
     st.markdown(
     """
-    <div class="email-warning">
-    ⚠️ Please use a real, active email address — not a random or
-    temporary one. Your account confirmation and job application
-    updates are sent to this inbox, and a fake email may prevent
-    you from accessing your account later.
+    <div class="email-warning" style="
+        background: #1E1B0F;
+        border: 2px solid #F59E0B;
+        border-left: 6px solid #F59E0B;
+        border-radius: 12px;
+        padding: 14px 18px;
+        margin-bottom: 16px;
+        font-size: 14px;
+        color: #FCD34D;
+        box-shadow: 0 0 20px rgba(245, 158, 11, 0.2);
+        animation: pulse-warning 1.5s ease-in-out infinite;
+    ">
+    ⚠️ <strong>IMPORTANT:</strong> Please use a real, active email address — 
+    not a random or temporary one. Your account confirmation and job application 
+    updates are sent to this inbox, and a fake email may prevent you from 
+    accessing your account later.
     </div>
     """,
     unsafe_allow_html=True
