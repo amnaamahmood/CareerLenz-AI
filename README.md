@@ -304,7 +304,7 @@ Returns a JSON success response to the Streamlit application, closing the reques
 
 **Successful Execution**
 
-![Execution](automation_execution.png)
+![Execution](automation_execution_logs.png)
 
 ---
 
