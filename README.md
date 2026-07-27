@@ -247,17 +247,20 @@ Returns a JSON success response to the Streamlit application, closing the reques
 
 ## 📸 Application Screenshots
 
+**Home**
+![Home]home.png)
+
 **Dashboard**
-![Dashboard](assets/screenshots/dashboard.png)
+![Dashboard](dashboard.png)
 
 **Resume Analysis**
-![Resume Analysis](assets/screenshots/resume_analysis.png)
-
-**GitHub Analysis**
-![GitHub Analysis](assets/screenshots/github_analysis.png)
+![Resume Analysis](resume_analysis.png)
 
 **Interview Practice**
-![Interview Practice](assets/screenshots/interview.png)
+![Interview Practice](interview.png)
+
+**Appliaction**
+![Application](application.png)
 
 ---
 
@@ -265,19 +268,19 @@ Returns a JSON success response to the Streamlit application, closing the reques
 
 **Workflow Canvas**
 
-![n8n Workflow](assets/n8n-workflow.png)
+![n8n Workflow](n8n-workflow.png)
 
 ---
 
 **Successful Execution**
 
-![Execution](assets/screenshots/automation_execution.png)
+![Execution](automation_execution.png)
 
 ---
 
 **Confirmation Email**
 
-![Email Notification](assets/screenshots/automation_email.png)
+![Email Notification](automation_email.png)
 
 ---
 
