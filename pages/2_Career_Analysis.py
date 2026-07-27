@@ -1333,39 +1333,38 @@ with col1:
                         f"⚠️ {saved.get('message')}"
                     )
                 else:
-                    # Professional Success Popup
-                    st.markdown(
-                        f"""
-                        <div class="success-popup">
-                            <div class="icon">✅</div>
-                            <h3>Application Saved Successfully</h3>
-                            <div class="subtitle">Your application has been submitted and is being processed</div>
-                            
-                            <div class="details">
-                                <p><span class="label">Company</span><br>{company}</p>
-                                <p><span class="label">Role</span><br>{role}</p>
-                                <p><span class="label">Status</span><br><span style="color: #10b981;">Applied</span></p>
+                    # Professional Success Popup - Using triple quotes properly
+                    success_html = f"""
+                    <div class="success-popup">
+                        <div class="icon">✅</div>
+                        <h3>Application Saved Successfully</h3>
+                        <div class="subtitle">Your application has been submitted and is being processed</div>
+                        
+                        <div class="details">
+                            <p><span class="label">Company</span><br>{company}</p>
+                            <p><span class="label">Role</span><br>{role}</p>
+                            <p><span class="label">Status</span><br><span style="color: #10b981;">Applied</span></p>
+                        </div>
+                        
+                        <div class="checklist">
+                            <div class="checklist-item">
+                                <span class="check">✓</span> Application recorded in your dashboard
                             </div>
-                            
-                            <div class="checklist">
-                                <div class="checklist-item">
-                                    <span class="check">✓</span> Application recorded in your dashboard
-                                </div>
-                                <div class="checklist-item">
-                                    <span class="check">✓</span> AI analysis saved for future reference
-                                </div>
-                                <div class="checklist-item">
-                                    <span class="check">✉</span> Confirmation email sent to your inbox
-                                </div>
+                            <div class="checklist-item">
+                                <span class="check">✓</span> AI analysis saved for future reference
                             </div>
-                            
-                            <div class="footer-note">
-                                📧 Please check your email inbox (and spam folder) for the confirmation.
+                            <div class="checklist-item">
+                                <span class="check">✉</span> Confirmation email sent to your inbox
                             </div>
                         </div>
-                        """,
-                        unsafe_allow_html=True
-                    )
+                        
+                        <div class="footer-note">
+                            📧 Please check your email inbox (and spam folder) for the confirmation.
+                        </div>
+                    </div>
+                    """
+                    
+                    st.markdown(success_html, unsafe_allow_html=True)
 
 
 
