@@ -463,18 +463,4 @@ if st.session_state.analysis:
         # Navigate to interview page using st.switch_page
         st.switch_page("pages/4_Interview_Practice.py")
 
-# =====================================================
-# LOGOUT BUTTON
-# =====================================================
 
-st.divider()
-
-if st.button("🚪 Logout", use_container_width=True):
-    try:
-        from auth import logout
-        logout()
-        st.rerun()
-    except ImportError:
-        # Simple logout if auth module not available
-        st.session_state.clear()
-        st.rerun()
