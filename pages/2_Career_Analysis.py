@@ -1,5 +1,4 @@
 import os
-import uuid
 import logging
 import requests
 import streamlit as st
@@ -542,11 +541,7 @@ DEFAULT_STATE = {
 
     "job_description": "",
 
-    "github_data": None,
-
-    "user_email": "",
-
-    "user_id": ""
+    "github_data": None
 
 }
 
@@ -557,12 +552,6 @@ for key,value in DEFAULT_STATE.items():
     if key not in st.session_state:
 
         st.session_state[key] = value
-
-
-# Generate a stable per-browser-session user_id once, so every
-# n8n event from this session carries the same identifier.
-if not st.session_state.user_id:
-    st.session_state.user_id = str(uuid.uuid4())
 
 
 
@@ -588,18 +577,6 @@ AI Resume Matching • GitHub Intelligence • Career Roadmap
 </div>
 """,
 unsafe_allow_html=True
-)
-
-
-# =====================================================
-# USER EMAIL (needed so n8n can send confirmations
-# to the actual user instead of a blank / hardcoded address)
-# =====================================================
-
-st.session_state.user_email = st.text_input(
-    "📧 Your Email (for application confirmations)",
-    value=st.session_state.user_email,
-    placeholder="you@example.com"
 )
 
 
@@ -1300,14 +1277,6 @@ with col1:
             )
 
 
-        elif not st.session_state.user_email.strip():
-
-            st.warning(
-
-                "Please enter your email above so we can send your confirmation."
-
-            )
-
 
         else:
 
@@ -1364,38 +1333,18 @@ with col1:
                         f"⚠️ {saved.get('message')}"
                     )
                 else:
-                    # Professional Success Popup - Using triple quotes properly
-                    success_html = f"""
-                    <div class="success-popup">
-                        <div class="icon">✅</div>
-                        <h3>Application Saved Successfully</h3>
-                        <div class="subtitle">Your application has been submitted and is being processed</div>
+                    # Professional Success Popup
+                    st.success(
+                        f"""
+                        ✅ **Application Saved Successfully!**
                         
-                        <div class="details">
-                            <p><span class="label">Company</span><br>{company}</p>
-                            <p><span class="label">Role</span><br>{role}</p>
-                            <p><span class="label">Status</span><br><span style="color: #10b981;">Applied</span></p>
-                        </div>
+                        **Company:** {company}
+                        **Role:** {role}
+                        **Status:** Applied
                         
-                        <div class="checklist">
-                            <div class="checklist-item">
-                                <span class="check">✓</span> Application recorded in your dashboard
-                            </div>
-                            <div class="checklist-item">
-                                <span class="check">✓</span> AI analysis saved for future reference
-                            </div>
-                            <div class="checklist-item">
-                                <span class="check">✉</span> Confirmation email sent to your inbox
-                            </div>
-                        </div>
-                        
-                        <div class="footer-note">
-                            📧 Please check your email inbox (and spam folder) for the confirmation.
-                        </div>
-                    </div>
-                    """
-                    
-                    st.markdown(success_html, unsafe_allow_html=True)
+                        📧 A confirmation email has been sent to your inbox. Please check your email and spam folder.
+                        """
+                    )
 
 
 
@@ -1411,9 +1360,15 @@ with col1:
 
                         "job_description": st.session_state.job_description,
 
-                        "user_email": st.session_state.user_email,
+                        "user_email": st.session_state.get(
+                            "user_email",
+                            ""
+                        ),
 
-                        "user_id": st.session_state.user_id
+                        "user_id": st.session_state.get(
+                            "user_id",
+                            ""
+                        )
 
                     }
 
