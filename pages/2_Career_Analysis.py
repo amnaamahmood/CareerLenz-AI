@@ -1,4 +1,5 @@
 import os
+import uuid
 import logging
 import requests
 import streamlit as st
@@ -541,7 +542,11 @@ DEFAULT_STATE = {
 
     "job_description": "",
 
-    "github_data": None
+    "github_data": None,
+
+    "user_email": "",
+
+    "user_id": ""
 
 }
 
@@ -552,6 +557,12 @@ for key,value in DEFAULT_STATE.items():
     if key not in st.session_state:
 
         st.session_state[key] = value
+
+
+# Generate a stable per-browser-session user_id once, so every
+# n8n event from this session carries the same identifier.
+if not st.session_state.user_id:
+    st.session_state.user_id = str(uuid.uuid4())
 
 
 
@@ -577,6 +588,18 @@ AI Resume Matching • GitHub Intelligence • Career Roadmap
 </div>
 """,
 unsafe_allow_html=True
+)
+
+
+# =====================================================
+# USER EMAIL (needed so n8n can send confirmations
+# to the actual user instead of a blank / hardcoded address)
+# =====================================================
+
+st.session_state.user_email = st.text_input(
+    "📧 Your Email (for application confirmations)",
+    value=st.session_state.user_email,
+    placeholder="you@example.com"
 )
 
 
@@ -1277,6 +1300,14 @@ with col1:
             )
 
 
+        elif not st.session_state.user_email.strip():
+
+            st.warning(
+
+                "Please enter your email above so we can send your confirmation."
+
+            )
+
 
         else:
 
@@ -1380,15 +1411,9 @@ with col1:
 
                         "job_description": st.session_state.job_description,
 
-                        "user_email": st.session_state.get(
-                            "user_email",
-                            ""
-                        ),
+                        "user_email": st.session_state.user_email,
 
-                        "user_id": st.session_state.get(
-                            "user_id",
-                            ""
-                        )
+                        "user_id": st.session_state.user_id
 
                     }
 
