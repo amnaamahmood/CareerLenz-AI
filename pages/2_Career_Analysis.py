@@ -1,8 +1,14 @@
 import streamlit as st
-import requests
-import json
 import os
+import logging
+import requests
+
 from dotenv import load_dotenv
+from database import save_analysis
+from application_manager import add_application
+from pdf_reader import extract_text_from_pdf
+from ai_analysis import analyze_resume
+from github_analyzer import analyze_github
 
 # =====================================================
 # ENVIRONMENT
@@ -10,19 +16,42 @@ from dotenv import load_dotenv
 
 load_dotenv()
 
-# Get API key from environment
-GEMINI_API_KEY = os.getenv("GEMINI_API_KEY")
-GEMINI_API_URL = "https://generativelanguage.googleapis.com/v1beta/models/gemini-pro:generateContent"
+N8N_WEBHOOK_URL = os.getenv("N8N_WEBHOOK_URL", "")
+
+# =====================================================
+# LOGGING
+# =====================================================
+
+logging.basicConfig(level=logging.INFO)
+logger = logging.getLogger("CareerLensAI")
 
 # =====================================================
 # PAGE CONFIG
 # =====================================================
 
 st.set_page_config(
-    page_title="Interview Practice",
-    page_icon="🎤",
+    page_title="Career Analysis",
+    page_icon="📊",
     layout="wide"
 )
+
+# =====================================================
+# CHECK AUTHENTICATION
+# =====================================================
+
+# Check if user is logged in
+if "user" not in st.session_state or st.session_state.user is None:
+    st.error("⚠️ Please log in first to access this page.")
+    
+    # FIX: Use st.page_link instead of st.switch_page
+    st.page_link("app.py", label="Go to Login", icon="🔐")
+    
+    # Or use a button with rerun
+    if st.button("Go to Login", use_container_width=True):
+        st.session_state.page = "login"
+        st.rerun()
+    
+    st.stop()  # Stop execution if not logged in
 
 # =====================================================
 # STYLING
@@ -41,6 +70,7 @@ st.markdown(
     border-radius: 18px;
     padding: 22px;
     margin-bottom: 18px;
+    animation: fadeInUp 0.6s ease-out;
 }
 h1, h2, h3 {
     color: #F8FAFC;
@@ -55,334 +85,396 @@ h1, h2, h3 {
     background: #023E8A !important;
     transform: scale(1.05) !important;
 }
+@keyframes fadeInUp {
+    from {
+        opacity: 0;
+        transform: translateY(30px);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
 </style>
 """,
     unsafe_allow_html=True
 )
 
 # =====================================================
-# GET ANALYSIS DATA - WITH SAFE CHECK
+# N8N EVENT HELPER
 # =====================================================
 
-# FIX: Safely get analysis from session state
-analysis = st.session_state.get("analysis")
-
-# If analysis is None or empty, redirect back or show error
-if not analysis:
-    st.error("❌ No career analysis found. Please complete the analysis first.")
+def trigger_n8n(event, data=None):
+    if not N8N_WEBHOOK_URL:
+        return False
     
-    # Button to go back to main page
-    if st.button("Go to Career Analysis", use_container_width=True):
-        st.switch_page("app.py")
+    payload = {"event": event, **(data or {})}
     
-    st.stop()  # Stop execution if no analysis
+    try:
+        response = requests.post(N8N_WEBHOOK_URL, json=payload, timeout=10)
+        return response.status_code in [200, 201, 202]
+    except Exception as e:
+        logger.warning(f"n8n trigger failed: {e}")
+        return False
 
 # =====================================================
-# EXTRACT DATA SAFELY WITH FALLBACKS
+# SESSION STATE
 # =====================================================
 
-# FIX: Use .get() with fallback values for all fields
-company = analysis.get("company_name", "the company")
-role = analysis.get("job_title", "this role")
-job_description = st.session_state.get("job_description", "")
+DEFAULT_STATE = {
+    "analysis": None,
+    "resume_text": "",
+    "job_description": "",
+    "github_data": None
+}
 
-# Get skills from analysis - handle different possible structures
-skills_data = analysis.get("requirement_analysis", [])
-skills = []
-if skills_data:
-    # Extract skill names from requirement_analysis
-    for item in skills_data:
-        if isinstance(item, dict):
-            skill_name = item.get("skill", "")
-            if skill_name:
-                skills.append(skill_name)
-
-# If no skills found, use a default list
-if not skills:
-    skills = ["Technical skills", "Communication", "Problem solving", "Team collaboration"]
+for key, value in DEFAULT_STATE.items():
+    if key not in st.session_state:
+        st.session_state[key] = value
 
 # =====================================================
 # HEADER
 # =====================================================
 
 st.markdown(
-    f"""
+    """
 <div class="card">
-    <h1>🎤 Interview Practice</h1>
-    <p>Prepare for your interview at <strong>{company}</strong> for the <strong>{role}</strong> position</p>
+    <h1>📊 Career Analysis</h1>
+    <p>Upload your resume and get AI-powered career insights</p>
 </div>
 """,
     unsafe_allow_html=True
 )
 
-# Show job description if available
-if job_description:
-    with st.expander("📋 View Job Description"):
-        st.write(job_description)
-
 # =====================================================
-# INTERVIEW CONFIGURATION
+# USER INFO
 # =====================================================
 
-st.subheader("Interview Settings")
+# Show user info
+user_name = st.session_state.get("user_name", "User")
+user_email = st.session_state.get("user_email", "")
+
+st.write(f"👋 Welcome, **{user_name}**!")
+
+# =====================================================
+# INPUT SECTION
+# =====================================================
+
+st.header("Candidate Profile")
 
 col1, col2 = st.columns(2)
 
 with col1:
-    question_count = st.selectbox(
-        "Number of Questions",
-        options=[3, 5, 8, 10],
-        index=0
+    uploaded_file = st.file_uploader(
+        "Upload Resume PDF",
+        type=["pdf"]
     )
 
 with col2:
-    difficulty = st.selectbox(
-        "Difficulty Level",
-        options=["Easy", "Medium", "Hard"],
-        index=0
+    github_url = st.text_input(
+        "GitHub Profile URL",
+        placeholder="https://github.com/username"
     )
 
-# =====================================================
-# SKILLS DISPLAY
-# =====================================================
-
-st.write("### Skills to Focus On")
-skills_cols = st.columns(4)
-for idx, skill in enumerate(skills[:4]):  # Show first 4 skills
-    with skills_cols[idx % 4]:
-        st.info(f"📌 {skill}")
+job_description = st.text_area(
+    "Target Job Description",
+    height=260
+)
 
 # =====================================================
-# START INTERVIEW BUTTON
+# RESUME EXTRACTION
 # =====================================================
 
-def generate_interview_questions(company, role, skills, job_desc, count, difficulty):
-    """Generate interview questions using Gemini API"""
-    
-    if not GEMINI_API_KEY:
-        return None, "Gemini API key not configured."
-    
-    # Prepare prompt
-    skills_text = ", ".join(skills[:5])
-    
-    prompt = f"""
-    You are an expert interview coach. Generate {count} {difficulty.lower()} interview questions for a candidate interviewing for the position of {role} at {company}.
-    
-    Job Description: {job_desc[:500] if job_desc else "Not provided"}
-    
-    Key Skills: {skills_text}
-    
-    For each question:
-    1. Start with a brief context
-    2. Ask a specific, relevant question
-    3. Provide a short tip on what the interviewer is looking for
-    
-    Format your response as a JSON array with objects containing:
-    - "question": The question text
-    - "context": Brief context
-    - "tip": What the interviewer is looking for
-    - "difficulty": The difficulty level
-    
-    Example format:
-    [
-        {{
-            "question": "Tell me about a time you faced a challenging technical problem",
-            "context": "Behavioral question about problem-solving",
-            "tip": "Use the STAR method to structure your answer",
-            "difficulty": "Medium"
-        }}
-    ]
-    """
-    
+resume_text = ""
+
+if uploaded_file:
     try:
-        headers = {
-            "Content-Type": "application/json"
-        }
-        
-        data = {
-            "contents": [{
-                "parts": [{
-                    "text": prompt
-                }]
-            }]
-        }
-        
-        response = requests.post(
-            f"{GEMINI_API_URL}?key={GEMINI_API_KEY}",
-            headers=headers,
-            json=data,
-            timeout=30
-        )
-        
-        if response.status_code == 200:
-            result = response.json()
-            
-            # Extract the text from the response
-            text = result.get("candidates", [{}])[0].get("content", {}).get("parts", [{}])[0].get("text", "[]")
-            
-            # Clean and parse JSON
-            # Remove markdown code blocks if present
-            text = text.strip()
-            if text.startswith("```json"):
-                text = text[7:]
-            if text.endswith("```"):
-                text = text[:-3]
-            
-            questions = json.loads(text)
-            return questions, None
-        else:
-            return None, f"API Error: {response.status_code}"
-            
-    except json.JSONDecodeError as e:
-        return None, f"Error parsing response: {e}"
+        resume_text = extract_text_from_pdf(uploaded_file)
+        st.success("✅ Resume extracted successfully")
     except Exception as e:
-        return None, f"Error: {e}"
+        st.error(f"❌ Resume extraction failed: {e}")
 
 # =====================================================
-# SESSION STATE FOR INTERVIEW
+# ANALYSIS FUNCTION
 # =====================================================
 
-if "interview_questions" not in st.session_state:
-    st.session_state.interview_questions = []
-if "current_question_index" not in st.session_state:
-    st.session_state.current_question_index = 0
-if "answers" not in st.session_state:
-    st.session_state.answers = {}
-if "interview_started" not in st.session_state:
-    st.session_state.interview_started = False
-if "interview_complete" not in st.session_state:
-    st.session_state.interview_complete = False
-
-# =====================================================
-# START INTERVIEW
-# =====================================================
-
-if st.button("🎤 Start Interview", use_container_width=True):
-    with st.spinner("Generating interview questions..."):
-        questions, error = generate_interview_questions(
-            company, role, skills, job_description, question_count, difficulty
-        )
-        
-        if questions:
-            st.session_state.interview_questions = questions
-            st.session_state.current_question_index = 0
-            st.session_state.answers = {}
-            st.session_state.interview_started = True
-            st.session_state.interview_complete = False
-            st.rerun()
-        else:
-            st.error(f"❌ Failed to generate questions: {error}")
-
-# =====================================================
-# INTERVIEW PROGRESS
-# =====================================================
-
-if st.session_state.interview_started and not st.session_state.interview_complete:
-    questions = st.session_state.interview_questions
-    current_idx = st.session_state.current_question_index
+def run_analysis():
+    if not resume_text:
+        st.warning("Please upload resume first.")
+        return
     
-    if not questions:
-        st.warning("No questions generated. Please start the interview again.")
-        if st.button("Restart Interview", use_container_width=True):
-            st.session_state.interview_started = False
-            st.rerun()
-    else:
-        # Progress bar
-        progress = (current_idx + 1) / len(questions)
-        st.progress(progress)
-        st.write(f"Question {current_idx + 1} of {len(questions)}")
-        
-        # Display current question
-        question_data = questions[current_idx]
-        
-        with st.container():
-            st.markdown(
-                f"""
-                <div class="card">
-                    <h3>Question {current_idx + 1}</h3>
-                    <p style="font-size: 18px; color: #E2E8F0;">{question_data.get('question', '')}</p>
-                    <p style="font-size: 14px; color: #64748B;">
-                        💡 <strong>Context:</strong> {question_data.get('context', '')}
-                    </p>
-                    <details>
-                        <summary style="color: #06B6D4; cursor: pointer;">Show Tip</summary>
-                        <p style="color: #94A3B8; margin-top: 8px;">{question_data.get('tip', '')}</p>
-                    </details>
-                </div>
-                """,
-                unsafe_allow_html=True
+    if not job_description.strip():
+        st.warning("Please enter job description.")
+        return
+    
+    github_data = None
+    
+    if github_url:
+        username = github_url.rstrip("/").split("/")[-1]
+        with st.spinner("Analyzing GitHub profile..."):
+            github_data = analyze_github(username)
+    
+    with st.spinner("Generating AI career report..."):
+        result = analyze_resume(
+            resume_text,
+            job_description,
+            github_data
+        )
+    
+    logger.info(f"Analysis result: {result}")
+    
+    if result.get("error"):
+        if result.get("quota_error") or "quota" in str(result.get("error", "")).lower():
+            st.error(
+                "⚠️ **AI Service Unavailable**\n\n"
+                "The analysis service has reached its daily limit. Please try again later."
             )
-            
-            # Answer input
-            answer = st.text_area(
-                "Your Answer",
-                height=150,
-                placeholder="Type your answer here...",
-                key=f"answer_{current_idx}"
-            )
-            
-            col1, col2 = st.columns(2)
-            
-            with col1:
-                if st.button("⏭️ Next Question", use_container_width=True):
-                    # Save answer
-                    st.session_state.answers[current_idx] = answer
-                    
-                    if current_idx + 1 < len(questions):
-                        st.session_state.current_question_index = current_idx + 1
-                        st.rerun()
-                    else:
-                        st.session_state.interview_complete = True
-                        st.rerun()
-            
-            with col2:
-                if st.button("🔄 Skip Question", use_container_width=True):
-                    st.session_state.answers[current_idx] = "Skipped"
-                    if current_idx + 1 < len(questions):
-                        st.session_state.current_question_index = current_idx + 1
-                        st.rerun()
-                    else:
-                        st.session_state.interview_complete = True
-                        st.rerun()
-
-# =====================================================
-# INTERVIEW COMPLETE
-# =====================================================
-
-if st.session_state.interview_complete:
-    st.markdown(
-        """
-        <div class="card" style="border-color: #10B981;">
-            <h2 style="text-align: center; color: #10B981;">🎉 Interview Complete!</h2>
-            <p style="text-align: center; color: #94A3B8;">You've completed all questions. Here's a summary:</p>
-        </div>
-        """,
-        unsafe_allow_html=True
+        else:
+            st.error(f"❌ {result.get('error')}")
+        return
+    
+    st.session_state.analysis = result
+    st.session_state.resume_text = resume_text
+    st.session_state.job_description = job_description
+    st.session_state.github_data = github_data
+    
+    trigger_n8n(
+        "career_analysis_completed",
+        {
+            "company": result.get("company_name", ""),
+            "match_score": result.get("match_score", 0)
+        }
     )
     
-    # Show summary of answers
-    for idx, q_data in enumerate(st.session_state.interview_questions):
-        with st.expander(f"Question {idx + 1}: {q_data.get('question', '')[:80]}..."):
-            st.write("**Question:**")
-            st.write(q_data.get('question', ''))
-            st.write("**Your Answer:**")
-            answer = st.session_state.answers.get(idx, "Not answered")
-            st.write(answer)
+    st.success("✅ Career analysis completed 🚀")
+
+# =====================================================
+# RUN BUTTON
+# =====================================================
+
+if st.button("Analyze Career Profile 🚀", use_container_width=True):
+    run_analysis()
+
+# =====================================================
+# REPORT SECTION
+# =====================================================
+
+if st.session_state.analysis:
+    analysis = st.session_state.analysis
     
-    # Feedback and action buttons
-    col1, col2, col3 = st.columns(3)
+    st.divider()
+    st.header("Career Readiness Report")
     
+    # Metrics
+    c1, c2, c3 = st.columns(3)
+    
+    with c1:
+        st.metric(
+            "Job Match",
+            f"{analysis.get('match_score', 0)}%"
+        )
+    
+    with c2:
+        st.metric(
+            "GitHub Score",
+            f"{analysis.get('github_review', {}).get('score', 0)}/100"
+        )
+    
+    with c3:
+        st.metric(
+            "Candidate Level",
+            analysis.get("candidate_level", "N/A")
+        )
+    
+    st.divider()
+    
+    tabs = st.tabs([
+        "📌 Skills Analysis",
+        "🐙 GitHub Review",
+        "🌎 Open Source",
+        "🧭 Career Mentor"
+    ])
+    
+    # Skills Analysis
+    with tabs[0]:
+        requirements = analysis.get("requirement_analysis", [])
+        
+        if not requirements:
+            st.info("No skill analysis available.")
+        else:
+            for item in requirements:
+                skill = item.get("skill", "Skill")
+                status = item.get("status", "")
+                
+                if status == "strong_match":
+                    icon = "🟢"
+                elif status == "partial_match":
+                    icon = "🟡"
+                else:
+                    icon = "🔴"
+                
+                st.markdown(f"""
+### {icon} {skill}
+
+**Status:** {status.replace('_', ' ').title()}
+
+**Evidence**
+{item.get('evidence', '')}
+""")
+                
+                if status != "strong_match":
+                    missing = item.get("missing", "")
+                    next_step = item.get("next_step", "")
+                    
+                    if missing:
+                        st.markdown(f"**Missing:** {missing}")
+                    
+                    if next_step:
+                        st.markdown(f"**Next Step:** {next_step}")
+    
+    # GitHub Review
+    with tabs[1]:
+        github = analysis.get("github_review", {})
+        st.subheader(f"GitHub Score: {github.get('score', 0)}/100")
+        
+        col1, col2 = st.columns(2)
+        
+        with col1:
+            st.write("### Strengths")
+            strengths = github.get("strengths", [])
+            if strengths:
+                for item in strengths:
+                    st.success(item)
+            else:
+                st.info("No strengths found.")
+        
+        with col2:
+            st.write("### Improvement Areas")
+            weaknesses = github.get("weaknesses", [])
+            if weaknesses:
+                for item in weaknesses:
+                    st.warning(item)
+            else:
+                st.info("No weaknesses found.")
+    
+    # Open Source
+    with tabs[2]:
+        recommendations = analysis.get("opensource_recommendations", [])
+        
+        if not recommendations:
+            st.info("No open source recommendations.")
+        else:
+            for repo in recommendations:
+                project = repo.get("project_name", repo.get("repository", ""))
+                
+                if not project:
+                    continue
+                
+                why_this_project = repo.get("why_this_project", repo.get("reason", ""))
+                contribution_type = repo.get("contribution_type", "")
+                career_impact = repo.get("career_impact", "")
+                github_url = repo.get("github_url", "")
+                
+                st.markdown(f"""
+### 🐙 {project}
+
+**Why this project**
+{why_this_project}
+
+**Contribution idea**
+{contribution_type}
+
+**Career impact**
+{career_impact}
+""")
+                
+                if github_url:
+                    st.markdown(f"**GitHub Repository:** [{github_url}]({github_url})")
+                
+                st.markdown("---")
+    
+    # Mentor
+    with tabs[3]:
+        st.info(analysis.get("mentor_summary", "No mentor advice available."))
+    
+    # =====================================================
+    # CAREER ACTIONS
+    # =====================================================
+    
+    st.divider()
+    st.header("Career Actions")
+    
+    col1, col2 = st.columns(2)
+    
+    # Save Application
     with col1:
-        if st.button("🔄 Retry Interview", use_container_width=True):
-            st.session_state.interview_started = False
-            st.session_state.interview_complete = False
-            st.session_state.interview_questions = []
+        if st.button("💼 Save Job Application", use_container_width=True):
+            if not st.session_state.analysis:
+                st.warning("Run analysis first.")
+            else:
+                analysis = st.session_state.analysis
+                company = analysis.get("company_name", "Unknown Company")
+                role = analysis.get("job_title", "Unknown Role")
+                
+                try:
+                    saved = add_application(
+                        company,
+                        role,
+                        st.session_state.job_description,
+                        analysis.get("match_score", 0)
+                    )
+                    
+                    if saved.get("status") == "duplicate":
+                        st.warning(f"⚠️ {saved.get('message')}")
+                    else:
+                        st.success(f"""
+                        ✅ **Application Saved Successfully!**
+                        
+                        **Company:** {company}
+                        **Role:** {role}
+                        **Status:** Applied
+                        """)
+                    
+                    trigger_n8n(
+                        "application_saved",
+                        {
+                            "company": company,
+                            "role": role,
+                            "job_description": st.session_state.job_description,
+                            "user_email": st.session_state.get("user_email", ""),
+                            "user_id": st.session_state.get("user_id", "")
+                        }
+                    )
+                except Exception as e:
+                    st.error(f"Application save failed: {e}")
+    
+    # Interview Practice - FIXED
+    with col2:
+        if st.button("🎤 Start Interview Practice", use_container_width=True):
+            # FIX: Use st.navigation or just rerun with a flag
+            # Option 1: Use query params to indicate navigation
+            st.query_params["page"] = "interview"
             st.rerun()
     
-    with col2:
-        if st.button("📊 Get Feedback", use_container_width=True):
-            st.info("Feedback feature coming soon!")
-    
-    with col3:
-        if st.button("🏠 Return Home", use_container_width=True):
-            st.switch_page("app.py")
+    # Check if we need to navigate to interview page
+    if st.query_params.get("page") == "interview":
+        # Clear the query param to prevent loops
+        st.query_params.clear()
+        # Navigate to interview page using st.switch_page
+        st.switch_page("pages/4_Interview_Practice.py")
+
+# =====================================================
+# LOGOUT BUTTON
+# =====================================================
+
+st.divider()
+
+if st.button("🚪 Logout", use_container_width=True):
+    try:
+        from auth import logout
+        logout()
+        st.rerun()
+    except ImportError:
+        # Simple logout if auth module not available
+        st.session_state.clear()
+        st.rerun()
