@@ -338,7 +338,6 @@ https://primary-production-61e9.up.railway.app
 
 ## 📂 Repository Structure
 
-```
 CareerLens-AI/
 │
 ├── app.py
@@ -364,20 +363,20 @@ CareerLens-AI/
 ├── data/
 │ └── Application data files
 │
-├── assets/
-│ ├── dashboard.png
-│ ├── resume_analysis.png
-│ ├── github_analysis.png
-│ ├── interview.png
-│ ├── n8n-workflow.png
-│ ├── automation_execution.png
-│ ├── automation_email.png
-│ └── careerlens-n8n-email-automation.json
+├── home.png
+├── dashboard.png
+├── resume_analysis.png
+├── github_analysis.png
+├── interview.png
+├── application.png
+├── n8n-workflow.png
+├── automation_execution.png
+├── automation_email.png
 │
+├── careerlens-n8n-email-automation.json
 ├── requirements.txt
 ├── .gitignore
 └── README.md
-```
 
 ---
 
