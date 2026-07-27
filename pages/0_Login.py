@@ -28,6 +28,16 @@ st.markdown(
 """
 <style>
 
+/* FIX: lock the page + main container to a stable minimum height so
+   content appearing/disappearing (errors, success messages, etc.)
+   does not visibly shrink/expand the page on every button click */
+
+html, body, [data-testid="stAppViewContainer"]{
+
+min-height:100vh !important;
+
+}
+
 .stApp{
 
 background:
@@ -37,6 +47,8 @@ circle at top,
 #020617 70%
 );
 
+min-height:100vh !important;
+
 }
 
 
@@ -44,6 +56,7 @@ circle at top,
 
 max-width:850px !important;
 padding-top:2rem !important;
+min-height:100vh !important;
 
 }
 
@@ -204,6 +217,38 @@ background:#023E8A !important;
 
 }
 
+
+/* EMAIL WARNING NOTE */
+
+.email-warning{
+
+background:#1E1B0F;
+
+border:1px solid #92400E;
+
+border-left:4px solid #F59E0B;
+
+border-radius:10px;
+
+padding:12px 16px;
+
+margin-bottom:14px;
+
+font-size:13px;
+
+color:#FCD34D;
+
+}
+
+
+/* FIX: reserve a stable slot for feedback messages so the page
+   doesn't jump in height when an error/success message appears */
+
+.message-slot{
+
+min-height:56px;
+
+}
 
 
 </style>
@@ -416,6 +461,10 @@ with login_tab:
     )
 
 
+    # FIX: fixed-height slot for the feedback message so the layout
+    # doesn't jump when it appears/disappears
+    login_message_slot = st.container()
+
 
     if st.button(
         "Login",
@@ -423,38 +472,40 @@ with login_tab:
     ):
 
 
-        if not login_email_input or not login_password:
-            st.error("Please enter both email and password.")
-        else:
-            result = login_email(
+        with login_message_slot:
 
-                login_email_input,
-
-                login_password
-
-            )
-
-
-
-            if result["success"]:
-
-                # Fix: Use dictionary syntax for session state
-                st.session_state["user"] = result["user"]
-
-                st.success(
-                    "Login successful 🚀"
-                )
-
-                st.rerun()
-
-
-
+            if not login_email_input or not login_password:
+                st.error("Please enter both email and password.")
             else:
+                result = login_email(
 
+                    login_email_input,
 
-                st.error(
-                    result["error"]
+                    login_password
+
                 )
+
+
+
+                if result["success"]:
+
+                    # Fix: Use dictionary syntax for session state
+                    st.session_state["user"] = result["user"]
+
+                    st.success(
+                        "Login successful 🚀"
+                    )
+
+                    st.rerun()
+
+
+
+                else:
+
+
+                    st.error(
+                        result["error"]
+                    )
 
 
 
@@ -497,6 +548,20 @@ with signup_tab:
     )
 
 
+    # ADDED: warning shown right before the email field, so users
+    # see it before they type a fake/random email
+    st.markdown(
+    """
+    <div class="email-warning">
+    ⚠️ Please use a real, active email address — not a random or
+    temporary one. Your account confirmation and job application
+    updates are sent to this inbox, and a fake email may prevent
+    you from accessing your account later.
+    </div>
+    """,
+    unsafe_allow_html=True
+    )
+
 
     signup_email_input = st.text_input(
 
@@ -531,6 +596,10 @@ with signup_tab:
     )
 
 
+    # FIX: fixed-height slot for the feedback message so the layout
+    # doesn't jump when it appears/disappears
+    signup_message_slot = st.container()
+
 
     if st.button(
 
@@ -541,66 +610,67 @@ with signup_tab:
     ):
 
 
+        with signup_message_slot:
 
-        if not signup_name.strip():
+            if not signup_name.strip():
 
-            st.error(
-                "Name is required."
-            )
-            
-        elif not signup_email_input.strip():
-            
-            st.error(
-                "Email is required."
-            )
-
-        elif signup_password != signup_confirm:
-
-
-            st.error(
-                "Passwords do not match."
-            )
-
-
-
-        elif len(signup_password) < 8:
-
-
-            st.error(
-                "Password must contain at least 8 characters."
-            )
-
-
-
-        else:
-
-
-            result = signup_email(
-
-                signup_email_input,
-
-                signup_password,
-
-                signup_name
-
-            )
-
-
-
-            if result["success"]:
-                
-                # Simplified success message
-                st.success(
-                    "Account created successfully! You can now login."
+                st.error(
+                    "Name is required."
                 )
+                
+            elif not signup_email_input.strip():
+                
+                st.error(
+                    "Email is required."
+                )
+
+            elif signup_password != signup_confirm:
+
+
+                st.error(
+                    "Passwords do not match."
+                )
+
+
+
+            elif len(signup_password) < 8:
+
+
+                st.error(
+                    "Password must contain at least 8 characters."
+                )
+
 
 
             else:
 
 
-                st.error(
-                    result["error"]
+                result = signup_email(
+
+                    signup_email_input,
+
+                    signup_password,
+
+                    signup_name
+
                 )
+
+
+
+                if result["success"]:
+                    
+                    # Simplified success message
+                    st.success(
+                        "Account created successfully! You can now login."
+                    )
+
+
+                else:
+
+
+                    st.error(
+                        result["error"]
+                    )
 
 
 
