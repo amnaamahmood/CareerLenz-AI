@@ -1,4 +1,5 @@
 import streamlit as st
+import streamlit.components.v1 as components
 
 from auth import (
     get_user,
@@ -17,6 +18,122 @@ st.set_page_config(
     page_title="CareerLens AI",
     page_icon="🚀",
     layout="centered"
+)
+
+
+# =====================================================
+# DISABLE BROWSER AUTOFILL / AUTOCOMPLETE - ENHANCED
+# =====================================================
+
+components.html(
+    """
+    <script>
+    function disableAutofill() {
+        const inputs = window.parent.document.querySelectorAll('input');
+        inputs.forEach((el) => {
+            // Remove ALL autocomplete attributes
+            el.setAttribute('autocomplete', 'off');
+            el.setAttribute('autocorrect', 'off');
+            el.setAttribute('autocapitalize', 'off');
+            el.setAttribute('spellcheck', 'false');
+            
+            // Add random name attributes to prevent browser from recognizing fields
+            const randomId = 'field_' + Math.random().toString(36).substring(2, 15);
+            el.setAttribute('name', randomId);
+            el.setAttribute('id', randomId);
+            
+            // Clear any existing values
+            el.value = '';
+            
+            // For password fields specifically
+            if (el.type === 'password') {
+                el.setAttribute('autocomplete', 'new-password');
+            }
+        });
+    }
+    
+    // Run immediately
+    disableAutofill();
+    
+    // Run on any DOM changes
+    const observer = new MutationObserver(disableAutofill);
+    observer.observe(window.parent.document.body, { 
+        childList: true, 
+        subtree: true 
+    });
+    
+    // Also run on focus events
+    document.addEventListener('focusin', function(e) {
+        if (e.target.tagName === 'INPUT') {
+            e.target.setAttribute('autocomplete', 'off');
+            e.target.setAttribute('name', 'field_' + Math.random().toString(36).substring(2, 15));
+        }
+    });
+    </script>
+    """,
+    height=0,
+)
+
+
+# =====================================================
+# ADDITIONAL CSS TO HIDE BROWSER AUTOFILL STYLES
+# =====================================================
+
+st.markdown(
+"""
+<style>
+/* Completely hide browser autofill suggestions */
+input:-webkit-autofill,
+input:-webkit-autofill:hover,
+input:-webkit-autofill:focus,
+input:-webkit-autofill:active {
+    -webkit-box-shadow: 0 0 0 30px #020617 inset !important;
+    -webkit-text-fill-color: white !important;
+    caret-color: white !important;
+    transition: background-color 5000s ease-in-out 0s;
+}
+
+/* Hide the autofill icon */
+input::-webkit-credentials-auto-fill-button {
+    display: none !important;
+    visibility: hidden !important;
+    pointer-events: none !important;
+}
+
+/* For Firefox */
+input:-moz-autofill {
+    background-color: #020617 !important;
+    color: white !important;
+}
+
+/* For Edge/IE */
+input:-ms-input-placeholder {
+    color: transparent !important;
+}
+
+/* Make sure inputs have no placeholder text */
+input::placeholder {
+    color: transparent !important;
+    opacity: 0 !important;
+}
+
+input::-webkit-input-placeholder {
+    color: transparent !important;
+    opacity: 0 !important;
+}
+
+input::-moz-placeholder {
+    color: transparent !important;
+    opacity: 0 !important;
+}
+
+input:-ms-input-placeholder {
+    color: transparent !important;
+    opacity: 0 !important;
+}
+</style>
+""",
+unsafe_allow_html=True
 )
 
 
@@ -399,7 +516,7 @@ login_tab, signup_tab = st.tabs(
 
 
 # =====================================================
-# LOGIN
+# LOGIN - WITH PLACEHOLDER REMOVED
 # =====================================================
 
 
@@ -419,6 +536,7 @@ with login_tab:
 
     login_email_input = st.text_input(
         "Email",
+        placeholder="",
         key="login_email"
     )
 
@@ -426,6 +544,7 @@ with login_tab:
     login_password = st.text_input(
         "Password",
         type="password",
+        placeholder="",
         key="login_password"
     )
 
@@ -485,7 +604,7 @@ with login_tab:
 
 
 # =====================================================
-# SIGNUP
+# SIGNUP - WITH PLACEHOLDER REMOVED
 # =====================================================
 
 
@@ -506,44 +625,34 @@ with signup_tab:
 
 
     signup_name = st.text_input(
-
         "Full Name",
-
+        placeholder="",
         key="signup_name"
-
     )
 
 
     signup_email_input = st.text_input(
-
         "Email",
-
+        placeholder="",
         key="signup_email"
-
     )
 
 
 
     signup_password = st.text_input(
-
         "Password",
-
         type="password",
-
+        placeholder="",
         key="signup_password"
-
     )
 
 
 
     signup_confirm = st.text_input(
-
         "Confirm Password",
-
         type="password",
-
+        placeholder="",
         key="signup_confirm"
-
     )
 
 
@@ -551,74 +660,32 @@ with signup_tab:
 
 
     if st.button(
-
         "Create Account",
-
         key="signup_submit"
-
     ):
 
 
         with signup_message_slot:
 
             if not signup_name.strip():
-
-                st.error(
-                    "Name is required."
-                )
-                
+                st.error("Name is required.")
             elif not signup_email_input.strip():
-                
-                st.error(
-                    "Email is required."
-                )
-
+                st.error("Email is required.")
             elif signup_password != signup_confirm:
-
-
-                st.error(
-                    "Passwords do not match."
-                )
-
-
-
+                st.error("Passwords do not match.")
             elif len(signup_password) < 8:
-
-
-                st.error(
-                    "Password must contain at least 8 characters."
-                )
-
-
-
+                st.error("Password must contain at least 8 characters.")
             else:
-
-
                 result = signup_email(
-
                     signup_email_input,
-
                     signup_password,
-
                     signup_name
-
                 )
-
-
 
                 if result["success"]:
-                    
-                    st.success(
-                        "Account created successfully! You can now login."
-                    )
-
-
+                    st.success("Account created successfully! You can now login.")
                 else:
-
-
-                    st.error(
-                        result["error"]
-                    )
+                    st.error(result["error"])
 
 
 
