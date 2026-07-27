@@ -247,8 +247,10 @@ Returns a JSON success response to the Streamlit application, closing the reques
 
 ## 📸 Application Screenshots
 
+## 📸 Application Screenshots
+
 **Home**
-![Home]home.png)
+![Home](home.png)
 
 **Dashboard**
 ![Dashboard](dashboard.png)
@@ -259,9 +261,8 @@ Returns a JSON success response to the Streamlit application, closing the reques
 **Interview Practice**
 ![Interview Practice](interview.png)
 
-**Appliaction**
-![Application](application.png)
-
+**Application Tracking**
+![Application Tracking](application.png)
 ---
 
 ## 🤖 Automation Screenshots
