@@ -450,6 +450,7 @@ with login_tab:
 
     login_email_input = st.text_input(
         "Email",
+        placeholder="",
         key="login_email"
     )
 
@@ -457,6 +458,7 @@ with login_tab:
     login_password = st.text_input(
         "Password",
         type="password",
+        placeholder="",
         key="login_password"
     )
 
@@ -540,11 +542,9 @@ with signup_tab:
 
 
     signup_name = st.text_input(
-
         "Full Name",
-
+        placeholder="",
         key="signup_name"
-
     )
 
 
@@ -564,35 +564,27 @@ with signup_tab:
 
 
     signup_email_input = st.text_input(
-
         "Email",
-
+        placeholder="",
         key="signup_email"
-
     )
 
 
 
     signup_password = st.text_input(
-
         "Password",
-
         type="password",
-
+        placeholder="",
         key="signup_password"
-
     )
 
 
 
     signup_confirm = st.text_input(
-
         "Confirm Password",
-
         type="password",
-
+        placeholder="",
         key="signup_confirm"
-
     )
 
 
@@ -602,75 +594,32 @@ with signup_tab:
 
 
     if st.button(
-
         "Create Account",
-
         key="signup_submit"
-
     ):
 
 
         with signup_message_slot:
 
             if not signup_name.strip():
-
-                st.error(
-                    "Name is required."
-                )
-                
+                st.error("Name is required.")
             elif not signup_email_input.strip():
-                
-                st.error(
-                    "Email is required."
-                )
-
+                st.error("Email is required.")
             elif signup_password != signup_confirm:
-
-
-                st.error(
-                    "Passwords do not match."
-                )
-
-
-
+                st.error("Passwords do not match.")
             elif len(signup_password) < 8:
-
-
-                st.error(
-                    "Password must contain at least 8 characters."
-                )
-
-
-
+                st.error("Password must contain at least 8 characters.")
             else:
-
-
                 result = signup_email(
-
                     signup_email_input,
-
                     signup_password,
-
                     signup_name
-
                 )
-
-
 
                 if result["success"]:
-                    
-                    # Simplified success message
-                    st.success(
-                        "Account created successfully! You can now login."
-                    )
-
-
+                    st.success("Account created successfully! You can now login.")
                 else:
-
-
-                    st.error(
-                        result["error"]
-                    )
+                    st.error(result["error"])
 
 
 
