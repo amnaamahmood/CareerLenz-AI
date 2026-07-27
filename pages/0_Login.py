@@ -22,27 +22,30 @@ st.set_page_config(
 
 
 # =====================================================
-# DISABLE BROWSER AUTOFILL / AUTOCOMPLETE
+# DISABLE BROWSER AUTOFILL / AUTOCOMPLETE (ALL FIELDS)
 # =====================================================
-# Chrome ignores autocomplete="off" on login/signup-style fields
-# (it heuristically decides a field is "email"/"username"/"password"
-# based on name/id/type/nearby label text, and once it decides that,
-# it shows saved suggestions regardless of autocomplete="off").
+# Chrome ignores autocomplete="off" on login/signup-style fields.
+# It heuristically decides a field is "email"/"username"/"password"
+# based on name/id/type/nearby label text, and once it decides
+# that, it shows saved suggestions (saved emails, GitHub username,
+# saved passwords) regardless of autocomplete="off".
 #
-# The reliable fix:
-#   1. Use a random, non-standard autocomplete token instead of "off"
-#      (Chrome doesn't recognize it, so it disables suggestions
-#      entirely instead of falling back to its own guess).
-#   2. Use autocomplete="new-password" specifically for password
+# This targets EVERY <input> on the page (both the Login tab and
+# the Create Account tab — Name, Email, Password, Confirm Password)
+# and:
+#   1. Assigns a random, non-standard autocomplete token instead of
+#      "off" (Chrome doesn't recognize it, so it disables
+#      suggestions entirely instead of falling back to a guess).
+#   2. Uses autocomplete="new-password" specifically for password
 #      fields (tells Chrome this is a new credential, not one to
 #      suggest from the saved list).
-#   3. Randomize name/id so Chrome's field-matching heuristic can't
-#      key off of them.
-#   4. Add data-lpignore / data-1p-ignore / data-form-type for
-#      LastPass / 1Password / Dashlane, which don't obey the same
-#      rules as Chrome's built-in autofill.
-#   5. Guard with a data attribute so the MutationObserver doesn't
-#      re-randomize fields (and disrupt typing) on every rerun.
+#   3. Randomizes name/id so Chrome's field-matching heuristic can't
+#      key off them.
+#   4. Adds data-lpignore / data-1p-ignore / data-form-type for
+#      LastPass / 1Password / Dashlane.
+#   5. Re-runs on every DOM mutation (Streamlit reruns/tab switches)
+#      via MutationObserver, but skips fields already patched so
+#      typing isn't disrupted.
 
 components.html(
     """
@@ -52,7 +55,7 @@ components.html(
     }
 
     function disableAutofill() {
-        const inputs = window.parent.document.querySelectorAll('input');
+        const inputs = window.parent.document.querySelectorAll('input, textarea');
         inputs.forEach((el) => {
             if (el.dataset.autofillPatched) return;
 
@@ -69,6 +72,8 @@ components.html(
             el.setAttribute('data-lpignore', 'true');
             el.setAttribute('data-1p-ignore', 'true');
             el.setAttribute('data-form-type', 'other');
+            el.setAttribute('readonly', 'true');
+            setTimeout(() => el.removeAttribute('readonly'), 100);
 
             el.dataset.autofillPatched = 'true';
         });
