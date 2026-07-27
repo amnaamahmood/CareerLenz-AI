@@ -22,30 +22,25 @@ st.set_page_config(
 
 
 # =====================================================
-# DISABLE BROWSER AUTOFILL / AUTOCOMPLETE (ALL FIELDS)
+# DISABLE BROWSER AUTOFILL / ACCOUNT PICKER (ALL FIELDS)
 # =====================================================
-# Chrome ignores autocomplete="off" on login/signup-style fields.
-# It heuristically decides a field is "email"/"username"/"password"
-# based on name/id/type/nearby label text, and once it decides
-# that, it shows saved suggestions (saved emails, GitHub username,
-# saved passwords) regardless of autocomplete="off".
+# Chrome's saved-account dropdown (the one showing your GitHub
+# avatar/email) is more aggressive than plain autocomplete
+# suggestions and isn't fully stopped by autocomplete="off" or
+# even a random token alone. This uses three layers together:
 #
-# This targets EVERY <input> on the page (both the Login tab and
-# the Create Account tab — Name, Email, Password, Confirm Password)
-# and:
-#   1. Assigns a random, non-standard autocomplete token instead of
-#      "off" (Chrome doesn't recognize it, so it disables
-#      suggestions entirely instead of falling back to a guess).
-#   2. Uses autocomplete="new-password" specifically for password
-#      fields (tells Chrome this is a new credential, not one to
-#      suggest from the saved list).
-#   3. Randomizes name/id so Chrome's field-matching heuristic can't
-#      key off them.
-#   4. Adds data-lpignore / data-1p-ignore / data-form-type for
-#      LastPass / 1Password / Dashlane.
-#   5. Re-runs on every DOM mutation (Streamlit reruns/tab switches)
-#      via MutationObserver, but skips fields already patched so
-#      typing isn't disrupted.
+#   1. Decoy hidden email + password inputs injected once at the
+#      top of the page. Chrome often attaches saved-credential
+#      autofill to the FIRST matching field pair it finds in the
+#      DOM, so giving it invisible decoys to "fill" instead keeps
+#      it away from your real fields.
+#   2. Every real input/textarea gets a random autocomplete token
+#      (or "new-password" for password fields), randomized
+#      name/id, and password-manager opt-out attributes
+#      (data-lpignore, data-1p-ignore, data-form-type).
+#   3. Attributes are re-applied on every DOM mutation AND on
+#      every focus event, since Streamlit re-renders inputs on
+#      rerun and Chrome can re-attach suggestions at that point.
 
 components.html(
     """
@@ -54,33 +49,77 @@ components.html(
         return 'no-autofill-' + Math.random().toString(36).slice(2);
     }
 
+    // ---- 1. Inject decoy fields once ----
+    function injectDecoys() {
+        const doc = window.parent.document;
+        if (doc.getElementById('__decoy_container__')) return;
+
+        const decoyWrap = doc.createElement('div');
+        decoyWrap.id = '__decoy_container__';
+        decoyWrap.style.position = 'absolute';
+        decoyWrap.style.opacity = '0';
+        decoyWrap.style.height = '0';
+        decoyWrap.style.width = '0';
+        decoyWrap.style.overflow = 'hidden';
+        decoyWrap.style.pointerEvents = 'none';
+
+        const decoyEmail = doc.createElement('input');
+        decoyEmail.type = 'email';
+        decoyEmail.name = 'email';
+        decoyEmail.autocomplete = 'username';
+        decoyEmail.tabIndex = -1;
+
+        const decoyPass = doc.createElement('input');
+        decoyPass.type = 'password';
+        decoyPass.name = 'password';
+        decoyPass.autocomplete = 'current-password';
+        decoyPass.tabIndex = -1;
+
+        decoyWrap.appendChild(decoyEmail);
+        decoyWrap.appendChild(decoyPass);
+        doc.body.insertBefore(decoyWrap, doc.body.firstChild);
+    }
+
+    // ---- 2 & 3. Patch real fields, re-applied on mutation + focus ----
+    function patchField(el) {
+        const isPassword = el.type === 'password';
+
+        el.setAttribute('autocomplete', isPassword ? 'new-password' : randomToken());
+        el.setAttribute('autocorrect', 'off');
+        el.setAttribute('autocapitalize', 'off');
+        el.setAttribute('spellcheck', 'false');
+        el.setAttribute('aria-autocomplete', 'none');
+
+        if (!el.dataset.stableName) {
+            el.dataset.stableName = randomToken();
+        }
+        el.setAttribute('name', el.dataset.stableName);
+
+        el.setAttribute('data-lpignore', 'true');
+        el.setAttribute('data-1p-ignore', 'true');
+        el.setAttribute('data-form-type', 'other');
+    }
+
     function disableAutofill() {
-        const inputs = window.parent.document.querySelectorAll('input, textarea');
+        const inputs = window.parent.document.querySelectorAll(
+            'input:not(#__decoy_container__ input), textarea'
+        );
         inputs.forEach((el) => {
-            if (el.dataset.autofillPatched) return;
-
-            const isPassword = el.type === 'password';
-
-            el.setAttribute('autocomplete', isPassword ? 'new-password' : randomToken());
-            el.setAttribute('autocorrect', 'off');
-            el.setAttribute('autocapitalize', 'off');
-            el.setAttribute('spellcheck', 'false');
-
-            el.setAttribute('name', randomToken());
-            if (el.id) el.setAttribute('id', randomToken());
-
-            el.setAttribute('data-lpignore', 'true');
-            el.setAttribute('data-1p-ignore', 'true');
-            el.setAttribute('data-form-type', 'other');
-            el.setAttribute('readonly', 'true');
-            setTimeout(() => el.removeAttribute('readonly'), 100);
-
-            el.dataset.autofillPatched = 'true';
+            patchField(el);
+            if (!el.dataset.autofillPatched) {
+                el.addEventListener('focus', () => patchField(el));
+                el.dataset.autofillPatched = 'true';
+            }
         });
     }
 
+    injectDecoys();
     disableAutofill();
-    const observer = new MutationObserver(disableAutofill);
+
+    const observer = new MutationObserver(() => {
+        injectDecoys();
+        disableAutofill();
+    });
     observer.observe(window.parent.document.body, { childList: true, subtree: true });
     </script>
     """,
