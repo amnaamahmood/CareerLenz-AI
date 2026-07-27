@@ -1,0 +1,226 @@
+{
+  "name": "CareerLens - Application Saved Email",
+  "nodes": [
+    {
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "new-application",
+        "responseMode": "responseNode",
+        "options": {}
+      },
+      "id": "284ddb75-fa47-4a7f-8e9d-7f2c469c555b",
+      "name": "Webhook",
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 2.1,
+      "position": [
+        -224,
+        -16
+      ],
+      "webhookId": "606f529a-0eea-401e-953a-1fe4391160c5"
+    },
+    {
+      "parameters": {
+        "tableId": "applications",
+        "fieldsUi": {
+          "fieldValues": [
+            {
+              "fieldId": "company",
+              "fieldValue": "={{$json.company}}"
+            },
+            {
+              "fieldId": "role",
+              "fieldValue": "={{$node[\"Webhook\"].json.body.role}}"
+            },
+            {
+              "fieldId": "job_description",
+              "fieldValue": "={{$node[\"Webhook\"].json.body.job_description}}"
+            },
+            {
+              "fieldId": "status",
+              "fieldValue": "Applied"
+            },
+            {
+              "fieldId": "user_id",
+              "fieldValue": "={{$node[\"Webhook\"].json.body.user_id}}"
+            },
+            {
+              "fieldId": "user_email",
+              "fieldValue": "={{$node[\"Webhook\"].json.body.user_email}}"
+            }
+          ]
+        }
+      },
+      "id": "5842f742-aee8-41d1-97bc-0d3761b9ac17",
+      "name": "Create a row",
+      "type": "n8n-nodes-base.supabase",
+      "typeVersion": 1,
+      "position": [
+        224,
+        0
+      ],
+      "credentials": {
+        "supabaseApi": {
+          "id": "19Bo9YvxupRC8nKa",
+          "name": "Supabase account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "sendTo": "={{$node[\"Webhook\"].json.body.user_email}}",
+        "subject": "=Application Saved - {{$node[\"Webhook\"].json.body.role}}",
+        "emailType": "text",
+        "message": "=CareerLens AI Application Saved ✅\n\n\nHello,\n\nYour application has been successfully saved in CareerLens AI.\n\n\n🏢 Company:\n{{$json.body.data.company}}\n\n\n💼 Role:\n{{$json.body.data.role}}\n\n\n📌 Status:\nApplied\n\n\nYour application tracker has been updated successfully.\n\n\nNext Steps:\n• Prepare for your interview\n• Improve your GitHub profile\n• Contribute to open-source projects\n• Keep building projects recruiters can see\n\n\nRecruiters often review GitHub activity, so continue improving your portfolio and making meaningful contributions.\n\n\nGood luck!\n\n\nCareerLens AI Team",
+        "options": {
+          "senderName": "CareerLens AI Team"
+        }
+      },
+      "id": "bbf3ede4-514e-40a1-a9f4-51dede044b56",
+      "name": "Send a message",
+      "type": "n8n-nodes-base.gmail",
+      "typeVersion": 2.2,
+      "position": [
+        448,
+        0
+      ],
+      "webhookId": "111f4d74-4677-48d1-bd26-be7d640f8af6",
+      "credentials": {
+        "gmailOAuth2": {
+          "id": "PlUr31AUmMQA1UeP",
+          "name": "Gmail account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "respondWith": "json",
+        "responseBody": "{\n  \"success\": true,\n  \"message\": \"Application saved successfully and confirmation email sent\"\n}",
+        "options": {
+          "responseCode": 200
+        }
+      },
+      "id": "0b08711f-42b8-40b6-9643-59bd8ae1ed6f",
+      "name": "Respond to Webhook",
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1.5,
+      "position": [
+        672,
+        0
+      ]
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "d2d77e84-732d-448b-b71f-513a2e43c413",
+              "name": "company",
+              "value": "={{$json.body.company}}",
+              "type": "string"
+            },
+            {
+              "id": "43e793e5-af38-4188-a0ff-300d00cc6114",
+              "name": "role",
+              "value": "={{$json.body.role}}",
+              "type": "string"
+            },
+            {
+              "id": "9e3a65a9-3e01-4c17-bdaf-ee77ee9a619b",
+              "name": "job_description",
+              "value": "={{$json.body.job_description}}",
+              "type": "string"
+            },
+            {
+              "id": "2554103d-ebc0-4430-92fb-ee24a0438fe9",
+              "name": "user_id",
+              "value": "={{$json.body.user_id}}",
+              "type": "string"
+            },
+            {
+              "id": "c5b00cc9-6ea8-4712-ab36-263452fb520c",
+              "name": "user_email",
+              "value": "={{$json.body.user_email}}",
+              "type": "string"
+            },
+            {
+              "id": "1a83f839-a7ed-4bad-a7c3-d0c6d74a894c",
+              "name": "status",
+              "value": "Applied",
+              "type": "string"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        0,
+        0
+      ],
+      "id": "9837db74-16a5-4364-a6e2-d5cc571068dc",
+      "name": "Edit Fields"
+    }
+  ],
+  "pinData": {},
+  "connections": {
+    "Webhook": {
+      "main": [
+        [
+          {
+            "node": "Edit Fields",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Create a row": {
+      "main": [
+        [
+          {
+            "node": "Send a message",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Send a message": {
+      "main": [
+        [
+          {
+            "node": "Respond to Webhook",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Edit Fields": {
+      "main": [
+        [
+          {
+            "node": "Create a row",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": true,
+  "settings": {
+    "executionOrder": "v1",
+    "binaryMode": "separate",
+    "availableInMCP": false
+  },
+  "versionId": "b2fec5fb-477b-440f-9ce1-b91f8c3d1cfa",
+  "meta": {
+    "templateCredsSetupCompleted": true,
+    "instanceId": "25109fd43fa07e974937e05b4546f8a3afaff09c08420db9e27d2d5fa73668e9"
+  },
+  "nodeGroups": [],
+  "id": "WngHD7ac4dvkGiWZ",
+  "tags": []
+}
