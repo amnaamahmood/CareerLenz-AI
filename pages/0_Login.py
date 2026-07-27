@@ -28,10 +28,6 @@ st.markdown(
 """
 <style>
 
-/* FIX: lock the page + main container to a stable minimum height so
-   content appearing/disappearing (errors, success messages, etc.)
-   does not visibly shrink/expand the page on every button click */
-
 html, body, [data-testid="stAppViewContainer"]{
 
 min-height:100vh !important;
@@ -218,32 +214,6 @@ background:#023E8A !important;
 }
 
 
-/* EMAIL WARNING NOTE */
-
-.email-warning{
-
-background:#1E1B0F;
-
-border:1px solid #92400E;
-
-border-left:4px solid #F59E0B;
-
-border-radius:10px;
-
-padding:12px 16px;
-
-margin-bottom:14px;
-
-font-size:13px;
-
-color:#FCD34D;
-
-}
-
-
-/* FIX: reserve a stable slot for feedback messages so the page
-   doesn't jump in height when an error/success message appears */
-
 .message-slot{
 
 min-height:56px;
@@ -317,7 +287,6 @@ if user:
         key="logout_btn"
     ):
 
-        # Clear user from session state first
         if "user" in st.session_state:
             del st.session_state["user"]
         
@@ -461,8 +430,6 @@ with login_tab:
     )
 
 
-    # FIX: fixed-height slot for the feedback message so the layout
-    # doesn't jump when it appears/disappears
     login_message_slot = st.container()
 
 
@@ -489,7 +456,6 @@ with login_tab:
 
                 if result["success"]:
 
-                    # Fix: Use dictionary syntax for session state
                     st.session_state["user"] = result["user"]
 
                     st.success(
@@ -548,21 +514,6 @@ with signup_tab:
     )
 
 
-    # ADDED: warning shown right before the email field, so users
-    # see it before they type a fake/random email
-    st.markdown(
-    """
-    <div class="email-warning">
-    ⚠️ Please use a real, active email address — not a random or
-    temporary one. Your account confirmation and job application
-    updates are sent to this inbox, and a fake email may prevent
-    you from accessing your account later.
-    </div>
-    """,
-    unsafe_allow_html=True
-    )
-
-
     signup_email_input = st.text_input(
 
         "Email",
@@ -596,8 +547,6 @@ with signup_tab:
     )
 
 
-    # FIX: fixed-height slot for the feedback message so the layout
-    # doesn't jump when it appears/disappears
     signup_message_slot = st.container()
 
 
@@ -659,7 +608,6 @@ with signup_tab:
 
                 if result["success"]:
                     
-                    # Simplified success message
                     st.success(
                         "Account created successfully! You can now login."
                     )
