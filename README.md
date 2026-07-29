@@ -18,7 +18,7 @@
 
 ## 🌐 Live Demo
 
-**Application:** [CareerLenz AI](https://careerlenz-ai-fyf8beiunwtv44ctckcpbw.streamlit.app/)
+**Application:** https://careerlenz-ai-fyf8beiunwtv44ctckcpbw.streamlit.app/
 ---
 
 ## 📌 Overview
