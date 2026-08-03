@@ -414,9 +414,5 @@ Contributions are welcome.
 
 **Amna Mahmood**
 Computer Science Student — Machine Learning & Applied AI
-
-- GitHub: [github.com/yourusername](https://github.com/amnaamahmood)
-- LinkedIn: [linkedin.com/in/yourprofile](https://www.linkedin.com/in/amna-mahmood-835934357/)
-
 ---
 
